@@ -191,6 +191,22 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .cal-day.today{box-shadow:0 0 0 2px var(--rosewood) inset;}
 .cal-day.sel{box-shadow:0 0 0 2px var(--moss) inset;}
 .cal-day.planned{border:2px dashed var(--petal);color:var(--rosewood);}
+
+/* period-style calendar (multi-day bars, Notion-like) */
+.period-cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;}
+.period-cal-dow-row div{font-size:10px;font-weight:700;color:var(--ink-soft);text-align:center;text-transform:uppercase;}
+.period-week{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;border-top:1px solid var(--line);padding:6px 0;}
+.period-day-num{font-size:10.5px;font-weight:700;color:var(--ink-soft);padding:2px 4px;}
+.period-day-num.empty{visibility:hidden;}
+.period-bar{
+  border-radius:7px;padding:4px 8px;color:#fff;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column;justify-content:center;min-height:34px;margin-top:1px;
+  box-shadow:0 2px 5px rgba(0,0,0,.15);transition:.12s;
+}
+.period-bar:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.22);}
+.period-bar-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.25);}
+.period-bar-sub{font-size:9px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.period-bar-planned{background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px);}
 .cal-lvl1{background:#D7E7CE;color:var(--moss);}
 .cal-lvl2{background:#AFCE9F;}
 .cal-lvl3{background:#7FAE6D;}
@@ -611,13 +627,21 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="card" style="padding:20px 22px;margin-bottom:26px;">
         <div class="section-title" style="margin-bottom:12px;flex-wrap:wrap;">
           <span style="flex:1;">🗓️ Calendário de leitura</span>
+          <button class="btn btn-ghost btn-sm" id="calViewPeriodBtn" onclick="setCalViewMode('period')">📅 Por período</button>
+          <button class="btn btn-ghost btn-sm" id="calViewDayBtn" onclick="setCalViewMode('day')">📊 Por dia</button>
           <button class="btn btn-ghost btn-sm" onclick="calShift(-1)">‹</button>
           <select class="select-sm" id="calMonthSelect" onchange="calJump()"></select>
           <select class="select-sm" id="calYearSelect" onchange="calJump()"></select>
           <button class="btn btn-ghost btn-sm" onclick="calShift(1)">›</button>
         </div>
-        <div class="cal-grid" id="calGrid"></div>
-        <div class="cal-hint">🎨 Dias com livros que têm cor definida aparecem com a corzinha do livro.</div>
+        <div class="period-cal" id="periodCalWrap" style="display:none;">
+          <div class="period-cal-dow-row" id="periodCalDow"></div>
+          <div id="periodCalGrid"></div>
+        </div>
+        <div id="dayCalWrap">
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-hint">🎨 Dias com livros que têm cor definida aparecem com a corzinha do livro.</div>
+        </div>
         <div class="month-recap" id="monthRecap"></div>
       </div>
 
@@ -1292,14 +1316,14 @@ function addReadingPlan(){
   save();
   renderPlanList();
   renderPlansSection();
-  renderCalendar();
+  renderCurrentCalView();
 }
 function deleteReadingPlan(id){
   DB.plans = DB.plans.filter(p=>p.id!==id);
   save();
   renderPlanList();
   renderPlansSection();
-  renderCalendar();
+  renderCurrentCalView();
 }
 function renderPlanList(){
   const el = document.getElementById('planList');
@@ -2002,7 +2026,11 @@ function renderDiarioPage(){
     <div class="flame">🔥</div>
     <div><b>${streak} dia${streak===1?'':'s'}</b> seguido${streak===1?'':'s'} de leitura registrada. ${streak>0?'Continue regando esse jardim! 🌱':'Registre hoje para começar sua sequência.'}</div>
   `;
-  renderCalendar();
+  document.getElementById('calViewPeriodBtn').classList.toggle('chip-active', calViewMode==='period');
+  document.getElementById('calViewDayBtn').classList.toggle('chip-active', calViewMode==='day');
+  document.getElementById('periodCalWrap').style.display = calViewMode==='period' ? 'block' : 'none';
+  document.getElementById('dayCalWrap').style.display = calViewMode==='day' ? 'block' : 'none';
+  renderCurrentCalView();
   renderDiaryHistory();
 }
 function renderDiaryHistory(){
@@ -2055,7 +2083,7 @@ function calShift(delta){
   if(calMonth>11){ calMonth=0; calYear++; }
   calSelectedDay = null;
   calShowingAll = false;
-  renderCalendar();
+  renderCurrentCalView();
   renderDiaryHistory();
 }
 function calJump(){
@@ -2063,7 +2091,7 @@ function calJump(){
   calYear = Number(document.getElementById('calYearSelect').value);
   calSelectedDay = null;
   calShowingAll = false;
-  renderCalendar();
+  renderCurrentCalView();
   renderDiaryHistory();
 }
 function populateCalSelectors(){
@@ -2170,6 +2198,112 @@ function renderCalendar(){
   document.getElementById('calGrid').innerHTML = html;
   renderMonthRecap();
 }
+
+/* ---- calendário por período (barras multi-dia, estilo Notion) ---- */
+let calViewMode = 'period';
+function renderCurrentCalView(){
+  if(calViewMode==='period') renderPeriodCalendar();
+  else renderCalendar();
+}
+function setCalViewMode(mode){
+  calViewMode = mode;
+  document.getElementById('calViewPeriodBtn').classList.toggle('chip-active', mode==='period');
+  document.getElementById('calViewDayBtn').classList.toggle('chip-active', mode==='day');
+  document.getElementById('periodCalWrap').style.display = mode==='period' ? 'block' : 'none';
+  document.getElementById('dayCalWrap').style.display = mode==='day' ? 'block' : 'none';
+  renderCurrentCalView();
+}
+function getReadingPeriodsForMonth(year, month){
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month+1, 0, 23, 59, 59);
+  const periods = [];
+  DB.books.forEach(b=>{
+    let start=null, end=null;
+    if(b.status==='lido' && b.finishDate){
+      end = new Date(b.finishDate+'T00:00:00');
+      start = b.startDate ? new Date(b.startDate+'T00:00:00') : end;
+      if(start>end) start = end;
+    } else if(b.status==='lendo' && b.startDate){
+      start = new Date(b.startDate+'T00:00:00');
+      end = new Date();
+    }
+    if(start && end && start<=monthEnd && end>=monthStart){
+      periods.push({ bookId:b.id, title:b.title, start, end, color:b.color, status:STATUS_LABEL[b.status]||'', kind:'read' });
+    }
+  });
+  DB.plans.forEach(p=>{
+    const b = DB.books.find(x=>x.id===p.bookId);
+    const start = new Date(p.startDate+'T00:00:00');
+    const end = new Date(p.endDate+'T00:00:00');
+    if(start<=monthEnd && end>=monthStart){
+      periods.push({ bookId:p.bookId, title:b?b.title:'(livro removido)', start, end, color:b?b.color:null, status:'Planejado', kind:'plan' });
+    }
+  });
+  return periods;
+}
+function renderPeriodCalendar(){
+  const el = document.getElementById('periodCalGrid');
+  const dowEl = document.getElementById('periodCalDow');
+  if(!el) return;
+  populateCalSelectors();
+  dowEl.innerHTML = DOW_PT.map(d=>`<div>${d}</div>`).join('');
+
+  const periods = getReadingPeriodsForMonth(calYear, calMonth);
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const firstDow = new Date(calYear, calMonth, 1).getDay();
+  const numWeeks = Math.ceil((firstDow+daysInMonth)/7);
+
+  let html = '';
+  for(let w=0; w<numWeeks; w++){
+    const weekStartCell = w*7;
+    const weekStartDate = new Date(calYear, calMonth, weekStartCell-firstDow+1);
+    const weekEndDate = new Date(calYear, calMonth, weekStartCell-firstDow+7, 23, 59, 59);
+
+    let dayNumHtml = '';
+    for(let c=0;c<7;c++){
+      const dayNum = weekStartCell + c - firstDow + 1;
+      if(dayNum<1 || dayNum>daysInMonth){
+        dayNumHtml += `<div class="period-day-num empty" style="grid-column:${c+1};grid-row:1;"></div>`;
+      } else {
+        dayNumHtml += `<div class="period-day-num" style="grid-column:${c+1};grid-row:1;">${dayNum}</div>`;
+      }
+    }
+
+    const weekSegments = [];
+    periods.forEach(p=>{
+      if(p.end < weekStartDate || p.start > weekEndDate) return;
+      const segStart = p.start < weekStartDate ? weekStartDate : p.start;
+      const segEnd = p.end > weekEndDate ? weekEndDate : p.end;
+      const startCol = Math.round((segStart - weekStartDate)/(1000*60*60*24));
+      const endCol = Math.round((segEnd - weekStartDate)/(1000*60*60*24));
+      weekSegments.push({...p, startCol: Math.max(0,Math.min(6,startCol)), endCol: Math.max(0,Math.min(6,endCol))});
+    });
+    weekSegments.sort((a,b)=> a.startCol-b.startCol || (b.endCol-b.startCol)-(a.endCol-a.startCol));
+
+    const laneEnds = [];
+    weekSegments.forEach(seg=>{
+      let lane = laneEnds.findIndex(endCol=> endCol < seg.startCol);
+      if(lane===-1){ lane = laneEnds.length; laneEnds.push(seg.endCol); }
+      else { laneEnds[lane] = seg.endCol; }
+      seg.lane = lane;
+    });
+    const maxLanes = Math.max(1, laneEnds.length);
+
+    let barsHtml = '';
+    weekSegments.forEach(seg=>{
+      const color = seg.color || BOOK_COLORS[hashStr(seg.bookId||seg.title) % BOOK_COLORS.length];
+      const rangeLabel = `${fmtDate(seg.start.toISOString().slice(0,10))} → ${fmtDate(seg.end.toISOString().slice(0,10))}`;
+      barsHtml += `<div class="period-bar ${seg.kind==='plan'?'period-bar-planned':''}" style="grid-column:${seg.startCol+1} / ${seg.endCol+2};grid-row:${seg.lane+2};background:${color};" onclick="openBookDetail('${seg.bookId}')" data-tooltip="${esc(seg.title)} — ${rangeLabel} — ${esc(seg.status)}">
+        <span class="period-bar-title">${esc(seg.title)}</span>
+        <span class="period-bar-sub">${rangeLabel} · ${esc(seg.status)}</span>
+      </div>`;
+    });
+
+    html += `<div class="period-week" style="grid-template-rows:auto repeat(${maxLanes}, auto);">${dayNumHtml}${barsHtml}</div>`;
+  }
+  el.innerHTML = html;
+  renderMonthRecap();
+}
 function renderMonthRecap(){
   const el = document.getElementById('monthRecap');
   if(!el) return;
@@ -2187,7 +2321,7 @@ function renderMonthRecap(){
 function calSelectDay(key){
   calShowingAll = false;
   calSelectedDay = (calSelectedDay===key) ? null : key;
-  renderCalendar();
+  renderCurrentCalView();
   renderDiaryHistory();
 }
 

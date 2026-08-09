@@ -145,11 +145,12 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .toolbar select:focus, .toolbar input:focus{border-color:var(--petal);}
 .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px;}
 .book{cursor:pointer;text-align:center;}
-.book .cover{width:100%;height:210px;border-radius:10px;margin-bottom:8px;box-shadow:0 6px 14px rgba(0,0,0,.12);transition:.18s;}
+.book .cover{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;margin-bottom:8px;box-shadow:0 6px 14px rgba(0,0,0,.12);transition:.18s;object-fit:cover;}
 .book:hover .cover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(173,86,120,.22);}
-.book .cover-empty{width:100%;height:210px;font-size:30px;flex-direction:column;gap:6px;}
+.book .cover-empty{width:100%;aspect-ratio:2/3;height:auto;font-size:30px;flex-direction:column;gap:6px;}
 .book-title{font-size:13px;font-weight:700;line-height:1.3;}
 .book-author{font-size:11.5px;color:var(--ink-soft);}
+.book-rating{font-size:11px;margin-top:2px;}
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:5px;}
 .badge-lendo{background:#EAF3E5;color:var(--moss);}
 .badge-lido{background:#F5E4EE;color:var(--rosewood);}
@@ -207,6 +208,16 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .period-bar-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.25);}
 .period-bar-sub{font-size:9px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .period-bar-planned{background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px);}
+
+/* metas (goal cards with mini covers) */
+.goal-card{padding:18px;}
+.goal-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.goal-card-icon{font-size:22px;}
+.goal-card-title{font-family:'Fraunces',serif;font-weight:600;font-size:15px;flex:1;}
+.goal-card-actions{display:flex;gap:4px;}
+.goal-mini-covers{display:flex;margin-bottom:10px;}
+.goal-mini-cover{width:34px;height:50px;border-radius:5px;object-fit:cover;margin-right:-14px;border:2px solid var(--cream);box-shadow:0 2px 5px rgba(0,0,0,.15);background:var(--blush-deep);}
+.goal-card-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
 .cal-lvl1{background:#D7E7CE;color:var(--moss);}
 .cal-lvl2{background:#AFCE9F;}
 .cal-lvl3{background:#7FAE6D;}
@@ -308,6 +319,22 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
 /* book color swatches */
 .color-swatches{display:flex;flex-wrap:wrap;gap:8px;}
+.color-wheel-row{display:flex;align-items:center;gap:20px;}
+.color-wheel{
+  width:92px;height:92px;border-radius:50%;position:relative;cursor:pointer;flex-shrink:0;
+  background:conic-gradient(from 0deg, hsl(0,68%,66%), hsl(60,68%,66%), hsl(120,68%,66%), hsl(180,68%,66%), hsl(240,68%,66%), hsl(300,68%,66%), hsl(360,68%,66%));
+  border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.18);
+}
+.color-wheel-dot{
+  position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+.color-current-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.color-current-dot{width:42px;height:42px;border-radius:50%;border:3px solid var(--line);box-shadow:0 3px 8px rgba(0,0,0,.15);background:#fff;transition:.15s;}
+.chip-picker{display:flex;flex-wrap:wrap;gap:7px;}
+.chip-picker .chip-btn{font-family:'Quicksand',sans-serif;font-weight:700;font-size:11.5px;padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;transition:.12s;}
+.chip-picker .chip-btn.chip-active{background:linear-gradient(90deg,var(--petal),var(--petal-deep));color:#fff;border-color:transparent;}
+.chip-picker .chip-empty{font-size:11.5px;color:var(--ink-soft);font-style:italic;}
 .color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0;transition:.12s;}
 .color-swatch:hover{transform:scale(1.1);}
 .color-swatch.sel{border-color:var(--ink);transform:scale(1.15);box-shadow:0 2px 6px rgba(0,0,0,.25);}
@@ -444,7 +471,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
   .reading-row{grid-template-columns:1fr;gap:12px;}
   .shelf{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px;}
-  .book .cover,.book .cover-empty{height:170px;}
   .person-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
   .quote-grid{grid-template-columns:1fr;}
 
@@ -511,12 +537,16 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="brand">🌷 <span>Jardim<br><small>Literário</small></span></div>
     <button class="navbtn active" data-page="inicio"><span class="ico">🏡</span> Início</button>
     <button class="navbtn" data-page="estante"><span class="ico">📚</span> Estante</button>
-    <button class="navbtn" data-page="desejos"><span class="ico">🎁</span> Desejos</button>
+    <button class="navbtn" data-page="desejos"><span class="ico">✨</span> TBR</button>
+    <button class="navbtn" data-page="wishlist"><span class="ico">🛍️</span> Lista de Desejos</button>
     <button class="navbtn" data-page="diario"><span class="ico">📔</span> Diário</button>
     <button class="navbtn" data-page="autoras"><span class="ico">🖋️</span> Autores</button>
     <button class="navbtn" data-page="sagas"><span class="ico">🔖</span> Sagas</button>
     <button class="navbtn" data-page="tags"><span class="ico">🏷️</span> Tags</button>
+    <button class="navbtn" data-page="prateleiras"><span class="ico">🗄️</span> Prateleiras</button>
     <button class="navbtn" data-page="favoritos"><span class="ico">❤️</span> Favoritos</button>
+    <button class="navbtn" data-page="metas"><span class="ico">⭐</span> Metas</button>
+    <button class="navbtn" data-page="desafios"><span class="ico">🎯</span> Desafios</button>
     <button class="navbtn" data-page="estatisticas"><span class="ico">📊</span> Estatísticas</button>
     <button class="navbtn" data-page="citacoes"><span class="ico">💬</span> Citações</button>
     <button class="navbtn" data-page="mais"><span class="ico">⚙️</span> Mais</button>
@@ -600,10 +630,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="shelf-view" id="shelfView" style="display:none;"></div>
     </div>
 
-    <!-- ===== DESEJOS ===== -->
+    <!-- ===== TBR (fila de prioridade de leitura) ===== -->
     <div class="page" id="page-desejos">
       <div class="page-header">
-        <div><h1>Lista de Desejos</h1><p>Os livros que você quer ler, na ordem que quiser.</p></div>
+        <div><h1>TBR</h1><p>Os livros que você quer ler, na ordem que quiser.</p></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-sage" onclick="suggestNextRead()">🎲 Sortear próxima leitura</button>
           <button class="btn btn-ghost" onclick="openPlanModal()">🗓️ Planejar leitura</button>
@@ -613,6 +643,17 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       </div>
       <div class="vine-divider"></div>
       <div class="queue-list" id="desejosList"></div>
+    </div>
+
+    <!-- ===== LISTA DE DESEJOS (livros pra comprar) ===== -->
+    <div class="page" id="page-wishlist">
+      <div class="page-header">
+        <div><h1>Lista de Desejos</h1><p>Livros que você quer comprar, com o valor de cada um.</p></div>
+        <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo item</button>
+      </div>
+      <div class="vine-divider"></div>
+      <div class="stat-grid" id="wishlistStatGrid" style="grid-template-columns:repeat(2,1fr);margin-bottom:24px;"></div>
+      <div id="wishlistList"></div>
     </div>
 
     <!-- ===== DIÁRIO ===== -->
@@ -660,7 +701,16 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <div class="field" style="flex:1;min-width:160px;"><label>Livro</label><select id="dEntryBook"></select></div>
         </div>
         <div class="diary-form-row">
-          <div class="field" style="flex:1;"><label>Páginas lidas</label><input type="number" id="dEntryPages" min="0" placeholder="ex: 24"></div>
+          <div class="field" style="flex:1;"><label>Páginas</label>
+            <div style="display:flex;gap:6px;">
+              <select id="dEntryMode" class="select-sm" style="flex:0 0 90px;">
+                <option value="delta">+ lidas</option>
+                <option value="current">atual</option>
+                <option value="percent">%</option>
+              </select>
+              <input type="number" id="dEntryPages" min="0" placeholder="ex: 24" style="flex:1;">
+            </div>
+          </div>
           <div class="field" style="flex:1;"><label>Minutos</label><input type="number" id="dEntryMinutes" min="0" placeholder="30"></div>
         </div>
         <div class="field" style="margin-bottom:16px;">
@@ -717,14 +767,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="card" style="margin-bottom:20px;padding:22px;">
         <div class="section-title">🏅 Conquistas</div>
         <div class="badge-grid" id="achievementsGrid"></div>
-      </div>
-
-      <div class="card" style="margin-bottom:20px;padding:22px;">
-        <div class="section-title" style="justify-content:space-between;">
-          <span>🎯 Desafios de leitura</span>
-          <button class="btn btn-ghost btn-sm" onclick="openChallengeModal()">+ Novo desafio</button>
-        </div>
-        <div id="challengeList"></div>
       </div>
 
       <div class="stat-grid" id="statGrid2"></div>
@@ -785,6 +827,36 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="page-header"><div><h1>Tags</h1><p>Navegue pelos seus próprios rótulos.</p></div></div>
       <div class="vine-divider"></div>
       <div class="person-grid" id="tagGrid"></div>
+    </div>
+
+    <!-- ===== PRATELEIRAS (gêneros) ===== -->
+    <div class="page" id="page-prateleiras">
+      <div class="page-header">
+        <div><h1>Prateleiras</h1><p>Seus livros organizados por gênero.</p></div>
+        <button class="btn btn-primary" onclick="openShelfModal()">+ Nova prateleira</button>
+      </div>
+      <div class="vine-divider"></div>
+      <div class="person-grid" id="shelfGenreGrid"></div>
+    </div>
+
+    <!-- ===== METAS (múltiplas, ao mesmo tempo) ===== -->
+    <div class="page" id="page-metas">
+      <div class="page-header">
+        <div><h1>Metas</h1><p>Quantas metas você quiser, ao mesmo tempo.</p></div>
+        <button class="btn btn-primary" onclick="openGoalCardModal()">+ Nova meta</button>
+      </div>
+      <div class="vine-divider"></div>
+      <div class="person-grid" id="goalsGrid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
+    </div>
+
+    <!-- ===== DESAFIOS ===== -->
+    <div class="page" id="page-desafios">
+      <div class="page-header">
+        <div><h1>Desafios</h1><p>Coleções e séries de leitura pra ir riscando.</p></div>
+        <button class="btn btn-primary" onclick="openChallengeModal()">+ Novo desafio</button>
+      </div>
+      <div class="vine-divider"></div>
+      <div id="challengeList"></div>
     </div>
 
     <!-- ===== FAVORITOS ===== -->
@@ -901,8 +973,25 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="field"><label>Frase favorita</label><input type="text" id="bQuote"></div>
     <div class="field"><label>Tags (separadas por vírgula)</label><input type="text" id="bTags" placeholder="ex: romance, slow burn, favorito"></div>
     <div class="field">
+      <label>Metas que este livro ajuda a completar</label>
+      <div class="chip-picker" id="bGoalsPicker"></div>
+    </div>
+    <div class="field">
+      <label>Desafios que este livro faz parte</label>
+      <div class="chip-picker" id="bChallengesPicker"></div>
+    </div>
+    <div class="field">
       <label>Cor do livro no calendário (opcional)</label>
-      <div class="color-swatches" id="colorSwatches"></div>
+      <div class="color-wheel-row">
+        <div class="color-wheel" id="colorWheel" onclick="pickColorFromWheel(event)">
+          <div class="color-wheel-dot" id="colorWheelDot"></div>
+        </div>
+        <div class="color-current-preview">
+          <div class="color-current-dot" id="colorCurrentDot"></div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickColor(null)">✕ Sem cor</button>
+        </div>
+      </div>
+      <div class="color-swatches" id="colorSwatches" style="margin-top:10px;"></div>
     </div>
     <div class="grid2">
       <div class="field"><label>Preço estimado (opcional)</label><input type="text" id="bPrice" placeholder="ex: R$ 39,90"></div>
@@ -935,6 +1024,78 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div id="authorModalSub" style="font-size:13px;color:var(--ink-soft);margin-top:-10px;"></div>
     <div class="detail-facts" id="authorStatsGrid" style="margin-top:14px;"></div>
     <div class="detail-book-list" id="authorBookList"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DETALHE DE META/DESAFIO ===== -->
+<div class="overlay" id="critDetailModalOverlay">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-close" onclick="closeModal('critDetailModalOverlay')">✕</button>
+    <h2 id="critDetailTitle">Detalhe</h2>
+    <div class="detail-facts" id="critDetailStats"></div>
+    <div class="toolbar" style="margin-bottom:12px;">
+      <input type="text" id="critDetailSearch" placeholder="🔎 Buscar nesta lista..." oninput="filterCritDetailList()">
+    </div>
+    <div class="detail-book-list" id="critDetailBookList" style="max-height:360px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('critDetailModalOverlay')">Fechar</button>
+      <button class="btn btn-primary" id="critDetailEditBtn">✎ Editar critérios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NOVA META (card) ===== -->
+<div class="overlay" id="goalCardModalOverlay">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('goalCardModalOverlay')">✕</button>
+    <h2 id="goalCardModalTitle">⭐ Nova meta</h2>
+    <input type="hidden" id="goalCardId">
+    <div class="field"><label>Nome da meta</label><input type="text" id="goalCardTitle" placeholder="ex: 20 livros até junho"></div>
+    <div class="grid2">
+      <div class="field"><label>Ícone (emoji)</label><input type="text" id="goalCardIcon" placeholder="⭐" maxlength="4"></div>
+      <div class="field"><label>Meta (livros)</label><input type="number" id="goalCardTarget" min="1"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Ano (opcional)</label><input type="number" id="goalCardYear" placeholder="qualquer ano"></div>
+      <div class="field"><label>Idioma (opcional)</label>
+        <select id="goalCardLanguage">
+          <option value="">—</option>
+          <option>Português</option><option>Inglês</option><option>Espanhol</option><option>Francês</option><option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Gênero (opcional)</label><input type="text" id="goalCardGenre" placeholder="ex: Fantasia"></div>
+      <div class="field"><label>Autora/Autor (opcional)</label><input type="text" id="goalCardAuthor" placeholder="ex: Emily Henry"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteGoalCardBtn" style="display:none;" onclick="deleteGoalCard()">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('goalCardModalOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGoalCard()">Salvar meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NOVA PRATELEIRA ===== -->
+<div class="overlay" id="shelfModalOverlay">
+  <div class="modal" style="max-width:360px;">
+    <button class="modal-close" onclick="closeModal('shelfModalOverlay')">✕</button>
+    <h2>🗄️ Nova prateleira</h2>
+    <div class="field"><label>Nome</label><input type="text" id="shelfName" placeholder="ex: Terror"></div>
+    <div class="field"><label>Ícone (emoji, opcional)</label><input type="text" id="shelfIcon" placeholder="📚" maxlength="4"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('shelfModalOverlay')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveShelf()">Criar prateleira</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DETALHE DA PRATELEIRA ===== -->
+<div class="overlay" id="shelfDetailModalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('shelfDetailModalOverlay')">✕</button>
+    <h2 id="shelfDetailTitle">Prateleira</h2>
+    <div class="detail-book-list" id="shelfDetailBookList"></div>
   </div>
 </div>
 
@@ -1127,6 +1288,13 @@ function migrateData(){
   if(!DB.settings.theme) DB.settings.theme = 'tulipa';
   if(!Array.isArray(DB.challenges)) DB.challenges = [];
   if(!Array.isArray(DB.plans)) DB.plans = [];
+  if(!Array.isArray(DB.shelves)) DB.shelves = [
+    {name:'Comédia', icon:'😂'}, {name:'Romance', icon:'❤️'}, {name:'Fantasia', icon:'🧙'},
+    {name:'Romantasia', icon:'🌷'}, {name:'Suspense', icon:'🔍'}, {name:'Ficção científica', icon:'🚀'},
+    {name:'Clássico', icon:'📜'}, {name:'Infantil', icon:'🧸'}, {name:'Ação', icon:'💥'},
+    {name:'Horror', icon:'👻'}, {name:'Distopia', icon:'🏙️'}, {name:'Familiar', icon:'💜'}
+  ];
+  if(!Array.isArray(DB.goals)) DB.goals = [];
   DB.logs.forEach(l=>{ if(l.minutesRead===undefined) l.minutesRead = 0; });
   let nextPriority = Math.max(0, ...DB.books.map(b=>b.priority||0)) + 1;
   DB.books.forEach(b=>{
@@ -1212,10 +1380,12 @@ function renderAll(){
   renderInicio();
   renderEstante();
   renderDesejosList();
-  renderDiarioPage();
+  renderWishlistPage();
   renderAutoras();
   renderSagas();
   renderTags();
+  renderShelves();
+  renderGoalsPage();
   renderFavoritos();
   renderEstatisticas();
   renderSidebarGoal();
@@ -1505,6 +1675,7 @@ function renderEstante(){
       <div class="cover-wrap">${coverHtml(b,'cover')}${b.favorite?'<span class="fav-badge">❤️</span>':''}${b.color?`<span class="color-dot" style="background:${b.color}"></span>`:''}</div>
       <div class="book-title">${esc(b.title)}</div>
       <div class="book-author">${esc(b.author)}</div>
+      ${b.rating?`<div class="book-rating">${starsHtml(b.rating)}</div>`:''}
       <span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}</span>
       ${b.lentTo?`<div class="lent-badge">📤 ${esc(b.lentTo)}</div>`:''}
     </div>
@@ -1536,6 +1707,33 @@ function renderShelfView(list){
     html += `<div class="shelf-tier"><div class="spine-row">${chunk.map(spineHtml).join('')}</div><div class="shelf-ledge"></div></div>`;
   }
   el.innerHTML = html;
+}
+function renderWishlistPage(){
+  const grid = document.getElementById('wishlistStatGrid');
+  const el = document.getElementById('wishlistList');
+  if(!el) return;
+  const items = DB.books.filter(b=> (b.price||'').trim());
+  const total = items.reduce((s,b)=>{
+    const n = parseFloat((b.price||'').replace(/[^\d,.-]/g,'').replace(',', '.'));
+    return s + (isNaN(n)?0:n);
+  }, 0);
+  if(grid){
+    grid.innerHTML = `
+      <div class="card stat-card"><div class="deco">🛍️</div><div class="num">${items.length}</div><div class="lbl">Itens na lista</div></div>
+      <div class="card stat-card"><div class="deco">💰</div><div class="num">R$ ${total.toFixed(2).replace('.',',')}</div><div class="lbl">Total estimado</div></div>
+    `;
+  }
+  if(items.length===0){
+    el.innerHTML = `<div class="card empty-state"><div class="big">🛍️</div>Nenhum livro com preço cadastrado ainda.<br><span style="font-size:12px;">Adicione um "Preço estimado" no cadastro de qualquer livro pra ele aparecer aqui.</span></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card diary-lines">${items.map(b=>`
+    <div class="diary-line" onclick="openBookDetail('${b.id}')" style="cursor:pointer;">
+      ${coverHtml(b,'cover')}
+      <span class="diary-line-book" style="margin-left:8px;">${esc(b.title)}</span>
+      <span class="diary-line-meta">💰 ${esc(b.price)}${b.store?' · '+esc(b.store):''}</span>
+    </div>
+  `).join('')}</div>`;
 }
 function renderDesejosList(){
   const books = DB.books.filter(b=>b.status==='quero-ler').sort((a,b)=>(a.priority||9999)-(b.priority||9999));
@@ -1637,6 +1835,85 @@ function renderColorSwatches(){
   const noneBtn = `<div class="color-swatch none ${!selectedColor?'sel':''}" title="Sem cor" onclick="pickColor(null)"></div>`;
   const swatches = BOOK_COLORS.map(c=>`<div class="color-swatch ${selectedColor===c?'sel':''}" style="background:${c}" title="${c}" onclick="pickColor('${c}')"></div>`).join('');
   el.innerHTML = noneBtn + swatches;
+  updateColorPreview();
+}
+function updateColorPreview(){
+  const dot = document.getElementById('colorCurrentDot');
+  if(!dot) return;
+  dot.style.background = selectedColor || '#fff';
+  const wheelDot = document.getElementById('colorWheelDot');
+  if(wheelDot){
+    if(selectedColor){
+      const hue = hexToHue(selectedColor);
+      positionWheelDot(hue, 32);
+    } else {
+      wheelDot.style.transform = 'translate(-50%,-50%)';
+    }
+  }
+}
+function positionWheelDot(angleDeg, radius){
+  const dot = document.getElementById('colorWheelDot');
+  if(!dot) return;
+  const rad = angleDeg * Math.PI/180;
+  const x = radius * Math.sin(rad);
+  const y = -radius * Math.cos(rad);
+  dot.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+}
+function pickColorFromWheel(e){
+  const wheel = document.getElementById('colorWheel');
+  const rect = wheel.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top + rect.height/2;
+  const dx = e.clientX - cx;
+  const dy = e.clientY - cy;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const maxR = rect.width/2;
+  if(dist > maxR + 4) return;
+  const angleDeg = (Math.atan2(dx, -dy) * 180/Math.PI + 360) % 360;
+  const hex = hslToHex(Math.round(angleDeg), 68, 66);
+  pickColor(hex);
+  positionWheelDot(angleDeg, Math.min(dist, maxR-6));
+}
+function hslToHex(h, s, l){
+  s/=100; l/=100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1-l);
+  const f = n => l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n),1)));
+  const toHex = x => Math.round(255*x).toString(16).padStart(2,'0');
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+}
+function hexToHue(hex){
+  if(!hex) return 0;
+  hex = hex.replace('#','');
+  const r = parseInt(hex.substring(0,2),16)/255;
+  const g = parseInt(hex.substring(2,4),16)/255;
+  const b = parseInt(hex.substring(4,6),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0;
+  if(max!==min){
+    const d = max-min;
+    if(max===r) h = ((g-b)/d + (g<b?6:0));
+    else if(max===g) h = (b-r)/d + 2;
+    else h = (r-g)/d + 4;
+    h *= 60;
+  }
+  return h;
+}
+function renderBookGoalsChallengesPicker(bookId){
+  const goalsEl = document.getElementById('bGoalsPicker');
+  const chalEl = document.getElementById('bChallengesPicker');
+  if(goalsEl){
+    goalsEl.innerHTML = DB.goals.length ? DB.goals.map(g=>{
+      const active = bookId && (g.bookIds||[]).includes(bookId);
+      return `<button type="button" class="chip-btn ${active?'chip-active':''}" data-goal-id="${g.id}" onclick="this.classList.toggle('chip-active')">${g.icon||'⭐'} ${esc(g.title)}</button>`;
+    }).join('') : `<span class="chip-empty">Crie metas na aba "⭐ Metas" primeiro.</span>`;
+  }
+  if(chalEl){
+    chalEl.innerHTML = DB.challenges.length ? DB.challenges.map(c=>{
+      const active = bookId && (c.bookIds||[]).includes(bookId);
+      return `<button type="button" class="chip-btn ${active?'chip-active':''}" data-challenge-id="${c.id}" onclick="this.classList.toggle('chip-active')">🎯 ${esc(c.title)}</button>`;
+    }).join('') : `<span class="chip-empty">Crie desafios na aba "🎯 Desafios" primeiro.</span>`;
+  }
 }
 function pickColor(c){
   selectedColor = c;
@@ -1737,7 +2014,12 @@ function renderBookDetail(b){
     ${progressChartHtml}
     <div class="quick-log-row">
       <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
-      <input type="number" id="quickLogPages" min="0" placeholder="páginas hoje">
+      <select id="quickLogMode" class="select-sm">
+        <option value="delta">+ páginas lidas</option>
+        <option value="current">página atual</option>
+        <option value="percent">% lido</option>
+      </select>
+      <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
     ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
@@ -1775,10 +2057,22 @@ function addQuickPageLog(bookId){
   const b = DB.books.find(x=>x.id===bookId);
   if(!b) return;
   const date = document.getElementById('quickLogDate').value || new Date().toISOString().slice(0,10);
-  const pages = Number(document.getElementById('quickLogPages').value)||0;
-  if(pages<=0){ alert('Digite quantas páginas você leu 🌱'); return; }
+  const mode = document.getElementById('quickLogMode').value;
+  const rawVal = Number(document.getElementById('quickLogValue').value)||0;
+  const before = b.currentPage||0;
+  let pages = 0;
+  if(mode==='delta'){
+    pages = rawVal;
+  } else if(mode==='current'){
+    pages = rawVal - before;
+  } else if(mode==='percent'){
+    if(!b.totalPages){ alert('Cadastre o total de páginas do livro pra usar o registro por porcentagem 🌱'); return; }
+    const targetPage = Math.round(b.totalPages * (rawVal/100));
+    pages = targetPage - before;
+  }
+  if(pages<=0){ alert('Esse valor não representa avanço em relação ao último registro (página atual: '+before+'). 🌱'); return; }
   DB.logs.push({ id:uid(), date, bookId, pagesRead:pages, minutesRead:0, note:'', mood:'' });
-  b.currentPage = Math.min((b.currentPage||0)+pages, b.totalPages||((b.currentPage||0)+pages));
+  b.currentPage = Math.min(before+pages, b.totalPages||(before+pages));
   if(b.status==='quero-ler'){ b.status='lendo'; if(!b.startDate) b.startDate = date; }
   save();
   renderBookDetail(b);
@@ -1823,6 +2117,7 @@ function openBookModal(id){
     selectedColor = b.color||null;
     paintFavorite();
     renderColorSwatches();
+    renderBookGoalsChallengesPicker(b.id);
     const estEl = document.getElementById('finishEstimateInfo');
     if(b.status==='lendo'){
       const est = estimateFinishDate(b);
@@ -1851,6 +2146,7 @@ function openBookModal(id){
     selectedColor = null;
     paintFavorite();
     renderColorSwatches();
+    renderBookGoalsChallengesPicker(null);
   }
   paintRating();
   document.getElementById('bookModalOverlay').classList.add('open');
@@ -1921,6 +2217,24 @@ function saveBook(){
   };
   if(existing){ Object.assign(existing, book); }
   else { DB.books.push(book); }
+  document.querySelectorAll('#bGoalsPicker [data-goal-id]').forEach(btn=>{
+    const g = DB.goals.find(x=>x.id===btn.dataset.goalId);
+    if(!g) return;
+    if(!Array.isArray(g.bookIds)) g.bookIds = [];
+    const idx = g.bookIds.indexOf(id);
+    const isActive = btn.classList.contains('chip-active');
+    if(isActive && idx===-1) g.bookIds.push(id);
+    if(!isActive && idx!==-1) g.bookIds.splice(idx,1);
+  });
+  document.querySelectorAll('#bChallengesPicker [data-challenge-id]').forEach(btn=>{
+    const c = DB.challenges.find(x=>x.id===btn.dataset.challengeId);
+    if(!c) return;
+    if(!Array.isArray(c.bookIds)) c.bookIds = [];
+    const idx = c.bookIds.indexOf(id);
+    const isActive = btn.classList.contains('chip-active');
+    if(isActive && idx===-1) c.bookIds.push(id);
+    if(!isActive && idx!==-1) c.bookIds.splice(idx,1);
+  });
   save();
   closeModal('bookModalOverlay');
   renderAll();
@@ -1972,9 +2286,21 @@ function populateDiaryBookSelect(){
 function addDiaryEntry(){
   const date = document.getElementById('dEntryDate').value || new Date().toISOString().slice(0,10);
   const bookId = document.getElementById('dEntryBook').value;
-  const pagesRead = Number(document.getElementById('dEntryPages').value)||0;
+  const mode = document.getElementById('dEntryMode').value;
+  const rawVal = Number(document.getElementById('dEntryPages').value)||0;
   const minutesRead = Number(document.getElementById('dEntryMinutes').value)||0;
   const note = document.getElementById('dEntryNote').value.trim();
+  let pagesRead = rawVal;
+  if(bookId && rawVal>0 && mode!=='delta'){
+    const b0 = DB.books.find(x=>x.id===bookId);
+    const before = b0 ? (b0.currentPage||0) : 0;
+    if(mode==='current'){ pagesRead = rawVal - before; }
+    else if(mode==='percent'){
+      if(!b0 || !b0.totalPages){ alert('Esse livro não tem total de páginas cadastrado, então não dá pra usar % 🌱'); return; }
+      pagesRead = Math.round(b0.totalPages*(rawVal/100)) - before;
+    }
+    if(pagesRead<=0){ alert('Esse valor não representa avanço em relação ao último registro desse livro. 🌱'); return; }
+  }
   if(!bookId && !note && !pagesRead && !minutesRead){ alert('Escreva algo, escolha um livro ou registre as páginas/minutos lidos 🌱'); return; }
   DB.logs.push({ id:uid(), date, bookId: bookId||null, pagesRead, minutesRead, note, mood: selectedMood });
   if(bookId){
@@ -2531,6 +2857,60 @@ function sagaDrop(e, targetId){
   renderSagas();
 }
 
+/* ============ PRATELEIRAS (gêneros) ============ */
+function getAllShelves(){
+  const known = new Set(DB.shelves.map(s=>s.name.trim().toLowerCase()));
+  const extra = [];
+  DB.books.forEach(b=>{
+    const g = (b.genre||'').trim();
+    if(g && !known.has(g.toLowerCase())){ known.add(g.toLowerCase()); extra.push({name:g, icon:'📚'}); }
+  });
+  return [...DB.shelves, ...extra];
+}
+function renderShelves(){
+  const grid = document.getElementById('shelfGenreGrid');
+  if(!grid) return;
+  const shelves = getAllShelves();
+  if(shelves.length===0){
+    grid.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;"><div class="big">🗄️</div>Crie sua primeira prateleira.</div>`;
+    return;
+  }
+  grid.innerHTML = shelves.map(s=>{
+    const count = DB.books.filter(b=> (b.genre||'').trim().toLowerCase()===s.name.toLowerCase()).length;
+    return `<div class="card person-card" onclick="openShelfDetailModal('${esc(s.name).replace(/'/g,"\\'")}')">
+      <div class="person-avatar">${s.icon||'📚'}</div>
+      <div class="person-name">${esc(s.name)}</div>
+      <div class="person-sub">${count===0?'Nenhum livro':`${count} livro${count===1?'':'s'}`} nessa prateleira</div>
+    </div>`;
+  }).join('');
+}
+function openShelfModal(){
+  document.getElementById('shelfName').value='';
+  document.getElementById('shelfIcon').value='';
+  document.getElementById('shelfModalOverlay').classList.add('open');
+}
+function saveShelf(){
+  const name = document.getElementById('shelfName').value.trim();
+  const icon = document.getElementById('shelfIcon').value.trim() || '📚';
+  if(!name){ alert('Dê um nome pra prateleira 🌱'); return; }
+  if(DB.shelves.some(s=>s.name.toLowerCase()===name.toLowerCase())){ alert('Já existe uma prateleira com esse nome.'); return; }
+  DB.shelves.push({name, icon});
+  save();
+  closeModal('shelfModalOverlay');
+  renderShelves();
+}
+function openShelfDetailModal(name){
+  const books = DB.books.filter(b=>(b.genre||'').trim().toLowerCase()===name.toLowerCase()).sort((a,b)=>a.title.localeCompare(b.title));
+  document.getElementById('shelfDetailTitle').textContent = name;
+  document.getElementById('shelfDetailBookList').innerHTML = books.length ? books.map(b=>`
+    <div class="dbl-item" onclick="closeModal('shelfDetailModalOverlay'); openBookDetail('${b.id}')">
+      ${coverHtml(b,'cover')}
+      <div><div class="dbl-title">${esc(b.title)}</div><div class="dbl-sub">${STATUS_LABEL[b.status]}</div></div>
+    </div>
+  `).join('') : `<div class="empty-state" style="padding:16px;">Nenhum livro nessa prateleira ainda. Defina o gênero "${esc(name)}" no cadastro de um livro pra ele aparecer aqui.</div>`;
+  document.getElementById('shelfDetailModalOverlay').classList.add('open');
+}
+
 /* ============ TAGS ============ */
 function renderTags(){
   const grid = document.getElementById('tagGrid');
@@ -2580,6 +2960,7 @@ function renderFavoritos(){
       <div class="cover-wrap">${coverHtml(b,'cover')}<span class="fav-badge">❤️</span></div>
       <div class="book-title">${esc(b.title)}</div>
       <div class="book-author">${esc(b.author)}</div>
+      ${b.rating?`<div class="book-rating">${starsHtml(b.rating)}</div>`:''}
       <span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}</span>
     </div>
   `).join('');
@@ -2904,16 +3285,22 @@ function deleteChallenge(){
   closeModal('challengeModalOverlay');
   renderChallenges();
 }
+function matchesCriteria(comp, book, c){
+  if(c.bookIds && c.bookIds.includes(book.id)) return true;
+  const hasAnyCriteria = c.year || c.genre || c.tag || c.author || c.language;
+  if(!hasAnyCriteria) return false;
+  if(c.year && new Date(comp.date+'T00:00:00').getFullYear()!==c.year) return false;
+  if(c.genre && (book.genre||'').toLowerCase()!==c.genre.toLowerCase()) return false;
+  if(c.tag && !(book.tags||[]).some(t=>t.toLowerCase()===c.tag.toLowerCase())) return false;
+  if(c.author && !book.author.toLowerCase().includes(c.author.toLowerCase())) return false;
+  if(c.language && (book.language||'')!==c.language) return false;
+  return true;
+}
 function challengeProgress(c){
   let count = 0;
   DB.books.forEach(b=>{
     (b.completions||[]).forEach(comp=>{
-      if(c.year && new Date(comp.date+'T00:00:00').getFullYear()!==c.year) return;
-      if(c.genre && (b.genre||'').toLowerCase()!==c.genre.toLowerCase()) return;
-      if(c.tag && !(b.tags||[]).some(t=>t.toLowerCase()===c.tag.toLowerCase())) return;
-      if(c.author && !b.author.toLowerCase().includes(c.author.toLowerCase())) return;
-      if(c.language && (b.language||'')!==c.language) return;
-      count++;
+      if(matchesCriteria(comp, b, c)) count++;
     });
   });
   return count;
@@ -2925,18 +3312,158 @@ function renderChallenges(){
     el.innerHTML = `<div class="empty-state" style="padding:20px;">Nenhum desafio criado ainda. Que tal um "5 livros de fantasia"? 🌷</div>`;
     return;
   }
-  el.innerHTML = DB.challenges.map(c=>{
+  el.innerHTML = `<div class="card diary-lines">` + DB.challenges.map(c=>{
     const done = challengeProgress(c);
     const pct = Math.min(100, Math.round((done/c.target)*100));
     const bits = [c.year, c.genre, c.tag?'#'+c.tag:'', c.author, c.language].filter(Boolean);
-    return `<div class="dbl-item" style="align-items:flex-start;cursor:pointer;" onclick="openChallengeModal('${c.id}')">
+    return `<div class="dbl-item" style="align-items:flex-start;cursor:pointer;border-bottom:1px solid var(--line);border-radius:0;" onclick="openChallengeDetail('${c.id}')">
       <div style="flex:1;">
-        <div class="dbl-title">${esc(c.title)} ${done>=c.target?'🏆':''}</div>
+        <div class="dbl-title">🎯 ${esc(c.title)} ${done>=c.target?'🏆':''}</div>
         <div class="dbl-sub">${done}/${c.target} livros${bits.length?' · '+bits.map(esc).join(' · '):''}</div>
         <div class="vine-track" style="margin-top:6px;height:8px;"><div class="vine-fill" style="width:${pct}%"></div></div>
       </div>
     </div>`;
+  }).join('') + `</div>`;
+}
+
+/* ============ METAS (múltiplas simultâneas) ============ */
+function openGoalCardModal(id){
+  document.getElementById('goalCardId').value = id||'';
+  document.getElementById('goalCardModalTitle').textContent = id ? '⭐ Editar meta' : '⭐ Nova meta';
+  document.getElementById('deleteGoalCardBtn').style.display = id ? 'inline-flex' : 'none';
+  if(id){
+    const g = DB.goals.find(x=>x.id===id);
+    document.getElementById('goalCardTitle').value = g.title;
+    document.getElementById('goalCardIcon').value = g.icon||'';
+    document.getElementById('goalCardTarget').value = g.target;
+    document.getElementById('goalCardYear').value = g.year||'';
+    document.getElementById('goalCardLanguage').value = g.language||'';
+    document.getElementById('goalCardGenre').value = g.genre||'';
+    document.getElementById('goalCardAuthor').value = g.author||'';
+  } else {
+    ['goalCardTitle','goalCardIcon','goalCardTarget','goalCardYear','goalCardGenre','goalCardAuthor'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('goalCardLanguage').value='';
+  }
+  document.getElementById('goalCardModalOverlay').classList.add('open');
+}
+function saveGoalCard(){
+  const title = document.getElementById('goalCardTitle').value.trim();
+  const target = Number(document.getElementById('goalCardTarget').value)||0;
+  if(!title || target<=0){ alert('Dê um nome e uma meta maior que zero 🌱'); return; }
+  const id = document.getElementById('goalCardId').value || uid();
+  const existing = DB.goals.find(g=>g.id===id);
+  const goal = {
+    id, title, target,
+    icon: document.getElementById('goalCardIcon').value.trim() || '⭐',
+    year: Number(document.getElementById('goalCardYear').value)||null,
+    genre: document.getElementById('goalCardGenre').value.trim(),
+    author: document.getElementById('goalCardAuthor').value.trim(),
+    language: document.getElementById('goalCardLanguage').value,
+    bookIds: existing ? (existing.bookIds||[]) : []
+  };
+  if(existing){ Object.assign(existing, goal); }
+  else { DB.goals.push(goal); }
+  save();
+  closeModal('goalCardModalOverlay');
+  renderGoalsPage();
+}
+function deleteGoalCard(){
+  const id = document.getElementById('goalCardId').value;
+  if(!id || !confirm('Excluir esta meta?')) return;
+  DB.goals = DB.goals.filter(g=>g.id!==id);
+  save();
+  closeModal('goalCardModalOverlay');
+  renderGoalsPage();
+}
+function renderGoalsPage(){
+  const el = document.getElementById('goalsGrid');
+  if(!el) return;
+  if(!DB.goals || DB.goals.length===0){
+    el.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;"><div class="big">⭐</div>Nenhuma meta criada ainda. Que tal "20 livros até junho"?</div>`;
+    return;
+  }
+  el.innerHTML = DB.goals.map(g=>{
+    const done = challengeProgress(g);
+    const pct = Math.min(100, Math.round((done/g.target)*100));
+    const remaining = Math.max(0, g.target-done);
+    const doneBooks = DB.books.filter(b=> (b.completions||[]).some(c=> matchesCriteria(c,b,g))).slice(0,5);
+    const coversHtml = doneBooks.map(b=> b.cover ? `<img class="goal-mini-cover" src="${b.cover}">` : `<div class="goal-mini-cover" style="display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--rosewood);">📖</div>`).join('');
+    return `<div class="card goal-card" style="cursor:pointer;" onclick="openGoalDetail('${g.id}')">
+      <div class="goal-card-head">
+        <span class="goal-card-icon">${g.icon||'⭐'}</span>
+        <span class="goal-card-title">${esc(g.title)}</span>
+        <div class="goal-card-actions">
+          <button class="btn btn-ghost btn-sm" style="padding:5px 9px;" onclick="event.stopPropagation(); openGoalCardModal('${g.id}')">✎</button>
+        </div>
+      </div>
+      ${coversHtml?`<div class="goal-mini-covers">${coversHtml}</div>`:''}
+      <div class="goal-card-sub">Você leu ${done} de ${g.target} livros${pct>=100?' · 🏆 Meta atingida!':` · Faltam ${remaining} para atingir a meta 🔥`}</div>
+      <div class="vine-track" style="height:9px;"><div class="vine-fill" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px;">${pct}%</div>
+    </div>`;
   }).join('');
+}
+
+/* ============ DETALHE COMPARTILHADO (metas/desafios) ============ */
+let critDetailBooksCache = [];
+function getCriteriaBooks(c){
+  const hasAnyCriteria = c.genre || c.tag || c.author || c.language;
+  return DB.books.filter(b=>{
+    if(c.bookIds && c.bookIds.includes(b.id)) return true;
+    if(!hasAnyCriteria) return false;
+    if(c.genre && (b.genre||'').toLowerCase()!==c.genre.toLowerCase()) return false;
+    if(c.tag && !(b.tags||[]).some(t=>t.toLowerCase()===c.tag.toLowerCase())) return false;
+    if(c.author && !b.author.toLowerCase().includes(c.author.toLowerCase())) return false;
+    if(c.language && (b.language||'')!==c.language) return false;
+    return true;
+  });
+}
+function openGoalDetail(id){ openCritDetail(id, 'goal'); }
+function openChallengeDetail(id){ openCritDetail(id, 'challenge'); }
+function openCritDetail(id, kind){
+  const item = kind==='goal' ? DB.goals.find(x=>x.id===id) : DB.challenges.find(x=>x.id===id);
+  if(!item) return;
+  const books = getCriteriaBooks(item).sort((a,b)=>a.title.localeCompare(b.title));
+  critDetailBooksCache = books;
+  document.getElementById('critDetailTitle').textContent = (item.icon?item.icon+' ':(kind==='challenge'?'🎯 ':'')) + item.title;
+  document.getElementById('critDetailSearch').value = '';
+  renderCritStats(item, books);
+  renderCritDetailList(books);
+  document.getElementById('critDetailEditBtn').onclick = ()=>{
+    closeModal('critDetailModalOverlay');
+    if(kind==='goal') openGoalCardModal(item.id); else openChallengeModal(item.id);
+  };
+  document.getElementById('critDetailModalOverlay').classList.add('open');
+}
+function renderCritStats(item, books){
+  const done = books.filter(b=>b.status==='lido').length;
+  const target = item.target || books.length || 1;
+  const pct = Math.min(100, Math.round((done/target)*100));
+  const remaining = Math.max(0, target-done);
+  document.getElementById('critDetailStats').innerHTML = `
+    <div><div class="detail-fact-label">Total de livros</div><div class="detail-fact-value">${books.length}</div></div>
+    <div><div class="detail-fact-label">Já li</div><div class="detail-fact-value">${done} de ${target}</div></div>
+    <div><div class="detail-fact-label">Conclusão</div><div class="detail-fact-value">${pct>=100?'🏆 Completo!':`Faltam ${remaining} 🔥`}</div></div>
+    <div><div class="detail-fact-label">Progresso</div><div class="detail-fact-value">${pct}%</div></div>
+    <div style="grid-column:1/-1;"><div class="vine-track" style="height:9px;margin-top:2px;"><div class="vine-fill" style="width:${pct}%"></div></div></div>
+  `;
+}
+function renderCritDetailList(books){
+  const el = document.getElementById('critDetailBookList');
+  el.innerHTML = books.length ? books.map(b=>`
+    <div class="dbl-item" onclick="closeModal('critDetailModalOverlay'); openBookDetail('${b.id}')">
+      ${coverHtml(b,'cover')}
+      <div style="flex:1;min-width:0;">
+        <div class="dbl-title">${esc(b.title)}</div>
+        <div class="dbl-sub">${STATUS_LABEL[b.status]} ${b.rating?'· '+starsHtml(b.rating):''}${b.totalPages?' · '+pct(b)+'%':''}</div>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state" style="padding:16px;">Nenhum livro aqui ainda. Vincule pelo cadastro do livro.</div>`;
+}
+function filterCritDetailList(){
+  const q = (document.getElementById('critDetailSearch').value||'').toLowerCase().trim();
+  const filtered = q ? critDetailBooksCache.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q)) : critDetailBooksCache;
+  renderCritDetailList(filtered);
 }
 
 /* ============ RETROSPECTIVA ANUAL ============ */

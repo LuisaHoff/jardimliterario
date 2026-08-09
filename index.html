@@ -2148,6 +2148,7 @@ function openBookModal(id){
     selectedColor = b.color||null;
     paintFavorite();
     renderColorSwatches();
+    document.getElementById('bColorHex').value = b.color || '';
     renderBookGoalsChallengesPicker(b.id);
     const estEl = document.getElementById('finishEstimateInfo');
     if(b.status==='lendo'){
@@ -2177,6 +2178,7 @@ function openBookModal(id){
     selectedColor = null;
     paintFavorite();
     renderColorSwatches();
+    document.getElementById('bColorHex').value = '';
     renderBookGoalsChallengesPicker(null);
   }
   paintRating();

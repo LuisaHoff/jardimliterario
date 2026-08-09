@@ -638,7 +638,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <button class="btn btn-sage" onclick="suggestNextRead()">🎲 Sortear próxima leitura</button>
           <button class="btn btn-ghost" onclick="openPlanModal()">🗓️ Planejar leitura</button>
           <button class="btn btn-ghost" onclick="shareWishlist()">📥 Baixar lista</button>
-          <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo desejo</button>
+          <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo livro</button>
         </div>
       </div>
       <div class="vine-divider"></div>
@@ -990,6 +990,11 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <div class="color-current-dot" id="colorCurrentDot"></div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="pickColor(null)">✕ Sem cor</button>
         </div>
+      </div>
+      <div class="color-hex-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+        <label for="bColorHex" style="margin:0;font-size:13px;white-space:nowrap;">Código hex:</label>
+        <input type="text" id="bColorHex" placeholder="#RRGGBB" maxlength="7" style="max-width:120px;font-family:monospace;" oninput="onHexInput(this)">
+        <span id="bColorHexError" style="font-size:12px;color:#c0392b;display:none;">hex inválido</span>
       </div>
       <div class="color-swatches" id="colorSwatches" style="margin-top:10px;"></div>
     </div>
@@ -1390,6 +1395,7 @@ function renderAll(){
   renderEstatisticas();
   renderSidebarGoal();
   renderCitacoes();
+  renderDiarioPage();
 }
 
 /* ============ HELPERS ============ */
@@ -1849,6 +1855,31 @@ function updateColorPreview(){
     } else {
       wheelDot.style.transform = 'translate(-50%,-50%)';
     }
+  }
+  const hexInput = document.getElementById('bColorHex');
+  const hexError = document.getElementById('bColorHexError');
+  if(hexInput && document.activeElement !== hexInput){
+    hexInput.value = selectedColor || '';
+  }
+  if(hexError) hexError.style.display = 'none';
+}
+function isValidHex(v){
+  return /^#([0-9A-Fa-f]{6})$/.test(v);
+}
+function onHexInput(input){
+  let v = input.value.trim();
+  if(v && v[0] !== '#') v = '#' + v;
+  const hexError = document.getElementById('bColorHexError');
+  if(v === '' || v === '#'){
+    if(hexError) hexError.style.display = 'none';
+    return;
+  }
+  if(isValidHex(v)){
+    if(hexError) hexError.style.display = 'none';
+    selectedColor = v.toUpperCase();
+    renderColorSwatches();
+  } else {
+    if(hexError) hexError.style.display = 'inline';
   }
 }
 function positionWheelDot(angleDeg, radius){

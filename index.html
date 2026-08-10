@@ -986,6 +986,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     </div>
     <div class="field">
       <label>Cor do livro no calendário (opcional)</label>
+      <div id="coverColorSuggestions" style="display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
       <div class="color-wheel-row">
         <div class="color-wheel" id="colorWheel" onclick="pickColorFromWheel(event)">
           <div class="color-wheel-dot" id="colorWheelDot"></div>
@@ -1953,6 +1954,13 @@ function renderBookGoalsChallengesPicker(bookId){
 function pickColor(c){
   selectedColor = c;
   renderColorSwatches();
+  const sugEl = document.getElementById('coverColorSuggestions');
+  if(sugEl){
+    sugEl.querySelectorAll('.color-swatch').forEach(s=> s.classList.toggle('sel', s.style.background && sameHex(s.getAttribute('title'), c)));
+  }
+}
+function sameHex(a,b){
+  return (a||'').toUpperCase() === (b||'').toUpperCase();
 }
 function toggleFavorite(){
   selectedFavorite = !selectedFavorite;
@@ -1984,10 +1992,68 @@ function handleCoverUpload(e){
       uploadedCover = canvas.toDataURL('image/jpeg', 0.82);
       document.getElementById('coverPreview').src = uploadedCover;
       document.getElementById('coverPreview').textContent='';
+      renderCoverColorSuggestions(extractPaletteFromImage(img));
     };
     img.src = evt.target.result;
   };
   reader.readAsDataURL(file);
+}
+function rgbToHex(r,g,b){
+  return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+function extractPaletteFromImage(img){
+  try{
+    const size = 50;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    const buckets = {};
+    for(let i=0;i<data.length;i+=4){
+      const a = data[i+3];
+      if(a<128) continue;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const qr = Math.round(r/24)*24, qg = Math.round(g/24)*24, qb = Math.round(b/24)*24;
+      const key = qr+','+qg+','+qb;
+      if(!buckets[key]) buckets[key] = {r:0,g:0,b:0,count:0};
+      buckets[key].r+=r; buckets[key].g+=g; buckets[key].b+=b; buckets[key].count++;
+    }
+    let arr = Object.values(buckets).map(o=>({r:Math.round(o.r/o.count),g:Math.round(o.g/o.count),b:Math.round(o.b/o.count),count:o.count}));
+    arr.sort((a,b)=>b.count-a.count);
+    const isNearWhite = c=> c.r>238 && c.g>238 && c.b>238;
+    const isNearBlack = c=> c.r<18 && c.g<18 && c.b<18;
+    const vivid = arr.filter(c=>!isNearWhite(c) && !isNearBlack(c));
+    const pool = vivid.length>=5 ? vivid : arr;
+    const result = [];
+    for(const c of pool){
+      if(result.length>=5) break;
+      const tooClose = result.some(r=>Math.abs(r.r-c.r)+Math.abs(r.g-c.g)+Math.abs(r.b-c.b) < 70);
+      if(!tooClose) result.push(c);
+    }
+    if(result.length<5){
+      for(const c of arr){
+        if(result.length>=5) break;
+        if(!result.includes(c)) result.push(c);
+      }
+    }
+    return result.slice(0,5).map(c=>rgbToHex(c.r,c.g,c.b));
+  }catch(err){
+    // canvas "manchada" por imagem de outro domínio sem CORS liberado — não dá pra ler os pixels
+    return [];
+  }
+}
+function renderCoverColorSuggestions(colors){
+  const el = document.getElementById('coverColorSuggestions');
+  if(!el) return;
+  if(!colors || !colors.length){
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-size:11.5px;color:var(--ink-soft);">✨ Cores da capa:</span>' +
+    colors.map(c=>`<div class="color-swatch ${selectedColor===c?'sel':''}" style="width:26px;height:26px;background:${c};" title="${c}" onclick="pickColor('${c}')"></div>`).join('');
 }
 function handleCoverUrl(){
   const input = document.getElementById('coverUrlInput');
@@ -2012,6 +2078,7 @@ function handleCoverUrl(){
     preview.src = uploadedCover;
     preview.textContent = '';
     input.value = '';
+    renderCoverColorSuggestions(extractPaletteFromImage(img));
   };
   img.onerror = ()=>{
     alert('Não consegui carregar essa imagem. Verifique o link e tente de novo.');
@@ -2149,6 +2216,7 @@ function openBookModal(id){
   document.getElementById('bookId').value = id||'';
   document.getElementById('coverInput').value='';
   document.getElementById('coverUrlInput').value='';
+  renderCoverColorSuggestions([]);
   const preview = document.getElementById('coverPreview');
   preview.removeAttribute('src'); preview.textContent='📖';
   document.getElementById('deleteBookBtn').style.display = id ? 'inline-flex':'none';
@@ -2191,7 +2259,13 @@ function openBookModal(id){
     } else {
       estEl.textContent = '';
     }
-    if(b.cover){ preview.src = b.cover; preview.textContent=''; uploadedCover = b.cover; }
+    if(b.cover){
+      preview.src = b.cover; preview.textContent=''; uploadedCover = b.cover;
+      const existingImg = new Image();
+      existingImg.crossOrigin = 'anonymous';
+      existingImg.onload = ()=> renderCoverColorSuggestions(extractPaletteFromImage(existingImg));
+      existingImg.src = b.cover;
+    }
     const rr = document.getElementById('rereadRow');
     const hist = b.completions||[];
     if(b.status==='lido'){

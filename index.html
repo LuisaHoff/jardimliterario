@@ -2158,6 +2158,25 @@ function renderBookDetail(b){
       </div></div>
     `;
   }
+  let completionsChartHtml = '';
+  if(hist.length){
+    const sortedHist = hist.slice().sort((a,c)=>a.date.localeCompare(c.date));
+    completionsChartHtml = `
+      <div class="mini-chart-scroll"><div class="bar-chart">
+        ${sortedHist.map(h=>{
+          const r = Number(h.rating)||0;
+          const heightPct = r>0 ? (r/5)*100 : 14;
+          const valueLbl = r>0 ? '⭐'.repeat(r) : '✓';
+          return `
+          <div class="bar-col" data-tooltip="${fmtDate(h.date)}${r?' — '+r+' estrelas':''}">
+            <span class="bar-value">${valueLbl}</span>
+            <div class="bar" style="height:${heightPct}%"></div>
+            <div class="bar-lbl" style="font-size:9px;">${fmtDate(h.date)}</div>
+          </div>`;
+        }).join('')}
+      </div></div>
+    `;
+  }
   const readingLogHtml = `
     <div class="detail-section-label">📅 Histórico de leitura deste livro</div>
     ${progressChartHtml}
@@ -2198,7 +2217,7 @@ function renderBookDetail(b){
     ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
     ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
     ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
-    ${hist.length?`<div class="detail-section-label">Histórico de leituras</div><div style="display:flex;flex-direction:column;gap:6px;">${hist.slice().sort((a,c)=>a.date.localeCompare(c.date)).map(h=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;background:var(--blush-deep);padding:6px 10px;border-radius:8px;"><span>${fmtDate(h.date)}</span>${h.rating?`<span>${starsHtml(h.rating)}</span>`:''}</div>`).join('')}</div>`:''}
+    ${hist.length?`<div class="detail-section-label">📚 Histórico de leituras (conclusões)</div>${completionsChartHtml}`:''}
     ${readingLogHtml}
   `;
 }

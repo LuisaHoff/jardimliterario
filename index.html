@@ -906,10 +906,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 <!-- ===== MODAL: BOOK DETAIL (read-only) ===== -->
 <div class="overlay" id="bookDetailModalOverlay">
   <div class="modal" style="max-width:560px;">
-    <button class="modal-close" onclick="closeModal('bookDetailModalOverlay')">✕</button>
+    <button class="modal-close" onclick="closeBookDetail()">✕</button>
     <div id="bookDetailContent"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('bookDetailModalOverlay')">Fechar</button>
+      <button class="btn btn-ghost" onclick="closeBookDetail()">Fechar</button>
       <button class="btn btn-primary" id="bookDetailEditBtn">✎ Editar</button>
     </div>
   </div>
@@ -1015,8 +1015,17 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('bLentTo').value='';document.getElementById('bLentDate').value='';">✔️ Marcar como devolvido</button>
     </div>
     <div id="rereadRow" style="display:none;margin-bottom:6px;">
-      <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
-      <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Histórico de leituras</label>
+      <div id="readHistoryList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--blush-deep);padding:8px 10px;border-radius:10px;">
+        <input type="date" id="retroReadDate" style="max-width:150px;">
+        <div class="star-rating" id="retroStarRating" style="font-size:16px;">
+          <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
+        </div>
+        <button class="btn btn-sage btn-sm" type="button" onclick="addRetroCompletion()">+ Adicionar leitura ao histórico</button>
+      </div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Use para registrar leituras antigas (antes de usar o app) ou releituras que já rolaram.</div>
+      <button class="btn btn-sage btn-sm" id="markRereadBtn" type="button" style="display:none;margin-top:10px;" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="deleteBookBtn" style="display:none;" onclick="deleteBook()">Excluir</button>
@@ -2093,6 +2102,15 @@ function openBookDetail(id){
   document.getElementById('bookDetailEditBtn').onclick = ()=>{ closeModal('bookDetailModalOverlay'); openBookModal(b.id); };
   document.getElementById('bookDetailModalOverlay').classList.add('open');
 }
+let critDetailReturnContext = null;
+function closeBookDetail(){
+  closeModal('bookDetailModalOverlay');
+  if(critDetailReturnContext){
+    const ctx = critDetailReturnContext;
+    critDetailReturnContext = null;
+    openCritDetail(ctx.id, ctx.kind);
+  }
+}
 function renderBookDetail(b){
   const p = pct(b);
   const est = b.status==='lendo' ? estimateFinishDate(b) : null;
@@ -2267,13 +2285,12 @@ function openBookModal(id){
       existingImg.src = b.cover;
     }
     const rr = document.getElementById('rereadRow');
-    const hist = b.completions||[];
-    if(b.status==='lido'){
-      rr.style.display='block';
-      document.getElementById('readHistoryInfo').textContent = hist.length>1 ? `Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}` : (hist.length===1 ? `Concluído em ${fmtDate(hist[0].date)}` : '');
-    } else {
-      rr.style.display='none';
-    }
+    rr.style.display='block';
+    renderReadHistoryList(b);
+    document.getElementById('markRereadBtn').style.display = b.status==='lido' ? 'inline-flex' : 'none';
+    document.getElementById('retroReadDate').value='';
+    retroRating = 0;
+    paintRetroRating();
   } else {
     document.getElementById('bookModalTitle').textContent = 'Novo livro';
     ['bTitle','bAuthor','bSaga','bSagaOrder','bGenre','bTotalPages','bCurrentPage','bStartDate','bFinishDate','bSynopsis','bThoughts','bQuote','bTags','bLentTo','bLentDate','bPrice','bStore'].forEach(f=> document.getElementById(f).value='');
@@ -2297,8 +2314,59 @@ function markReread(){
   document.getElementById('bCurrentPage').value = 0;
   document.getElementById('bStartDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('bFinishDate').value = '';
-  document.getElementById('rereadRow').style.display='none';
+  document.getElementById('markRereadBtn').style.display='none';
   alert('Prontinho! Ajustei o status para "Lendo" e zerei a página atual. Clique em Salvar livro para confirmar a releitura 🌱');
+}
+let retroRating = 0;
+document.getElementById('retroStarRating').addEventListener('click', e=>{
+  if(e.target.dataset.v){ retroRating = Number(e.target.dataset.v); paintRetroRating(); }
+});
+function paintRetroRating(){
+  document.querySelectorAll('#retroStarRating span').forEach(s=> s.classList.toggle('on', Number(s.dataset.v)<=retroRating));
+}
+function renderReadHistoryList(b){
+  const el = document.getElementById('readHistoryList');
+  if(!el) return;
+  const hist = (b.completions||[]).slice().sort((a,c)=> a.date.localeCompare(c.date));
+  if(!hist.length){
+    el.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);">Nenhuma leitura registrada ainda.</div>';
+    return;
+  }
+  el.innerHTML = hist.map(h=>{
+    const realIndex = (b.completions||[]).indexOf(h);
+    const stars = h.rating ? '⭐'.repeat(h.rating) : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;background:var(--cream);padding:6px 10px;border-radius:8px;">
+      <span>${fmtDate(h.date)}${stars?' · '+stars:''}</span>
+      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" onclick="removeCompletion('${b.id}', ${realIndex})">✕</button>
+    </div>`;
+  }).join('');
+}
+function addRetroCompletion(){
+  const bookId = document.getElementById('bookId').value;
+  if(!bookId){ alert('Salve o livro primeiro e depois edite-o para adicionar leituras retroativas ao histórico 🌷'); return; }
+  const dateInput = document.getElementById('retroReadDate');
+  const date = dateInput.value;
+  if(!date){ alert('Escolha a data em que você terminou essa leitura.'); return; }
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  if(!Array.isArray(b.completions)) b.completions = [];
+  b.completions.push({date, rating: retroRating});
+  b.completions.sort((a,c)=> a.date.localeCompare(c.date));
+  save();
+  dateInput.value = '';
+  retroRating = 0;
+  paintRetroRating();
+  renderReadHistoryList(b);
+  renderAll();
+}
+function removeCompletion(bookId, index){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b || !Array.isArray(b.completions)) return;
+  if(!confirm('Remover esta leitura do histórico?')) return;
+  b.completions.splice(index,1);
+  save();
+  renderReadHistoryList(b);
+  renderAll();
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function saveBook(){
@@ -3559,11 +3627,13 @@ function getCriteriaBooks(c){
     return true;
   });
 }
+let currentCritDetail = null;
 function openGoalDetail(id){ openCritDetail(id, 'goal'); }
 function openChallengeDetail(id){ openCritDetail(id, 'challenge'); }
 function openCritDetail(id, kind){
   const item = kind==='goal' ? DB.goals.find(x=>x.id===id) : DB.challenges.find(x=>x.id===id);
   if(!item) return;
+  currentCritDetail = {id, kind};
   const books = getCriteriaBooks(item).sort((a,b)=>a.title.localeCompare(b.title));
   critDetailBooksCache = books;
   document.getElementById('critDetailTitle').textContent = (item.icon?item.icon+' ':(kind==='challenge'?'🎯 ':'')) + item.title;
@@ -3589,10 +3659,15 @@ function renderCritStats(item, books){
     <div style="grid-column:1/-1;"><div class="vine-track" style="height:9px;margin-top:2px;"><div class="vine-fill" style="width:${pct}%"></div></div></div>
   `;
 }
+function openBookFromCritDetail(bookId){
+  critDetailReturnContext = currentCritDetail;
+  closeModal('critDetailModalOverlay');
+  openBookDetail(bookId);
+}
 function renderCritDetailList(books){
   const el = document.getElementById('critDetailBookList');
   el.innerHTML = books.length ? books.map(b=>`
-    <div class="dbl-item" onclick="closeModal('critDetailModalOverlay'); openBookDetail('${b.id}')">
+    <div class="dbl-item" onclick="openBookFromCritDetail('${b.id}')">
       ${coverHtml(b,'cover')}
       <div style="flex:1;min-width:0;">
         <div class="dbl-title">${esc(b.title)}</div>

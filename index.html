@@ -1015,17 +1015,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('bLentTo').value='';document.getElementById('bLentDate').value='';">✔️ Marcar como devolvido</button>
     </div>
     <div id="rereadRow" style="display:none;margin-bottom:6px;">
-      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Histórico de leituras</label>
-      <div id="readHistoryList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--blush-deep);padding:8px 10px;border-radius:10px;">
-        <input type="date" id="retroReadDate" style="max-width:150px;">
-        <div class="star-rating" id="retroStarRating" style="font-size:16px;">
-          <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
-        </div>
-        <button class="btn btn-sage btn-sm" type="button" onclick="addRetroCompletion()">+ Adicionar leitura ao histórico</button>
-      </div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Use para registrar leituras antigas (antes de usar o app) ou releituras que já rolaram.</div>
-      <button class="btn btn-sage btn-sm" id="markRereadBtn" type="button" style="display:none;margin-top:10px;" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
+      <button class="btn btn-sage btn-sm" id="markRereadBtn" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="deleteBookBtn" style="display:none;" onclick="deleteBook()">Excluir</button>
@@ -2190,6 +2180,19 @@ function renderBookDetail(b){
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
+    ${hist.length ? completionsChartHtml : ''}
+    <div class="quick-log-row" style="margin-top:8px;">
+      <input type="date" id="quickCompletionDate" value="${new Date().toISOString().slice(0,10)}">
+      <select id="quickCompletionRating" class="select-sm">
+        <option value="0">Sem nota</option>
+        <option value="1">⭐ 1</option>
+        <option value="2">⭐⭐ 2</option>
+        <option value="3">⭐⭐⭐ 3</option>
+        <option value="4">⭐⭐⭐⭐ 4</option>
+        <option value="5">⭐⭐⭐⭐⭐ 5</option>
+      </select>
+      <button class="btn btn-sage btn-sm" onclick="addQuickCompletion('${b.id}')">+ Registrar leitura concluída</button>
+    </div>
     ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
         <span class="diary-line-date">${fmtDate(l.date)}</span>
@@ -2217,9 +2220,20 @@ function renderBookDetail(b){
     ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
     ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
     ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
-    ${hist.length?`<div class="detail-section-label">📚 Histórico de leituras (conclusões)</div>${completionsChartHtml}`:''}
     ${readingLogHtml}
   `;
+}
+function addQuickCompletion(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  const date = document.getElementById('quickCompletionDate').value || new Date().toISOString().slice(0,10);
+  const rating = Number(document.getElementById('quickCompletionRating').value)||0;
+  if(!Array.isArray(b.completions)) b.completions = [];
+  b.completions.push({date, rating});
+  b.completions.sort((a,c)=> a.date.localeCompare(c.date));
+  save();
+  renderBookDetail(b);
+  renderAll();
 }
 function addQuickPageLog(bookId){
   const b = DB.books.find(x=>x.id===bookId);
@@ -2304,12 +2318,7 @@ function openBookModal(id){
       existingImg.src = b.cover;
     }
     const rr = document.getElementById('rereadRow');
-    rr.style.display='block';
-    renderReadHistoryList(b);
-    document.getElementById('markRereadBtn').style.display = b.status==='lido' ? 'inline-flex' : 'none';
-    document.getElementById('retroReadDate').value='';
-    retroRating = 0;
-    paintRetroRating();
+    rr.style.display= b.status==='lido' ? 'block' : 'none';
   } else {
     document.getElementById('bookModalTitle').textContent = 'Novo livro';
     ['bTitle','bAuthor','bSaga','bSagaOrder','bGenre','bTotalPages','bCurrentPage','bStartDate','bFinishDate','bSynopsis','bThoughts','bQuote','bTags','bLentTo','bLentDate','bPrice','bStore'].forEach(f=> document.getElementById(f).value='');
@@ -2333,59 +2342,8 @@ function markReread(){
   document.getElementById('bCurrentPage').value = 0;
   document.getElementById('bStartDate').value = new Date().toISOString().slice(0,10);
   document.getElementById('bFinishDate').value = '';
-  document.getElementById('markRereadBtn').style.display='none';
+  document.getElementById('rereadRow').style.display='none';
   alert('Prontinho! Ajustei o status para "Lendo" e zerei a página atual. Clique em Salvar livro para confirmar a releitura 🌱');
-}
-let retroRating = 0;
-document.getElementById('retroStarRating').addEventListener('click', e=>{
-  if(e.target.dataset.v){ retroRating = Number(e.target.dataset.v); paintRetroRating(); }
-});
-function paintRetroRating(){
-  document.querySelectorAll('#retroStarRating span').forEach(s=> s.classList.toggle('on', Number(s.dataset.v)<=retroRating));
-}
-function renderReadHistoryList(b){
-  const el = document.getElementById('readHistoryList');
-  if(!el) return;
-  const hist = (b.completions||[]).slice().sort((a,c)=> a.date.localeCompare(c.date));
-  if(!hist.length){
-    el.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);">Nenhuma leitura registrada ainda.</div>';
-    return;
-  }
-  el.innerHTML = hist.map(h=>{
-    const realIndex = (b.completions||[]).indexOf(h);
-    const stars = h.rating ? '⭐'.repeat(h.rating) : '';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;background:var(--cream);padding:6px 10px;border-radius:8px;">
-      <span>${fmtDate(h.date)}${stars?' · '+stars:''}</span>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;" onclick="removeCompletion('${b.id}', ${realIndex})">✕</button>
-    </div>`;
-  }).join('');
-}
-function addRetroCompletion(){
-  const bookId = document.getElementById('bookId').value;
-  if(!bookId){ alert('Salve o livro primeiro e depois edite-o para adicionar leituras retroativas ao histórico 🌷'); return; }
-  const dateInput = document.getElementById('retroReadDate');
-  const date = dateInput.value;
-  if(!date){ alert('Escolha a data em que você terminou essa leitura.'); return; }
-  const b = DB.books.find(x=>x.id===bookId);
-  if(!b) return;
-  if(!Array.isArray(b.completions)) b.completions = [];
-  b.completions.push({date, rating: retroRating});
-  b.completions.sort((a,c)=> a.date.localeCompare(c.date));
-  save();
-  dateInput.value = '';
-  retroRating = 0;
-  paintRetroRating();
-  renderReadHistoryList(b);
-  renderAll();
-}
-function removeCompletion(bookId, index){
-  const b = DB.books.find(x=>x.id===bookId);
-  if(!b || !Array.isArray(b.completions)) return;
-  if(!confirm('Remover esta leitura do histórico?')) return;
-  b.completions.splice(index,1);
-  save();
-  renderReadHistoryList(b);
-  renderAll();
 }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function saveBook(){

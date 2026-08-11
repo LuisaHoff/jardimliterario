@@ -2172,27 +2172,16 @@ function renderBookDetail(b){
     ${progressChartHtml}
     <div class="quick-log-row">
       <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
-      <select id="quickLogMode" class="select-sm">
+      <select id="quickLogMode" class="select-sm" onchange="toggleQuickLogValueField(this)">
         <option value="delta">+ páginas lidas</option>
         <option value="current">página atual</option>
         <option value="percent">% lido</option>
+        <option value="finished">✔️ concluí a leitura</option>
       </select>
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
-    ${hist.length ? completionsChartHtml : ''}
-    <div class="quick-log-row" style="margin-top:8px;">
-      <input type="date" id="quickCompletionDate" value="${new Date().toISOString().slice(0,10)}">
-      <select id="quickCompletionRating" class="select-sm">
-        <option value="0">Sem nota</option>
-        <option value="1">⭐ 1</option>
-        <option value="2">⭐⭐ 2</option>
-        <option value="3">⭐⭐⭐ 3</option>
-        <option value="4">⭐⭐⭐⭐ 4</option>
-        <option value="5">⭐⭐⭐⭐⭐ 5</option>
-      </select>
-      <button class="btn btn-sage btn-sm" onclick="addQuickCompletion('${b.id}')">+ Registrar leitura concluída</button>
-    </div>
+    ${hist.length ? `<div class="detail-section-label" style="margin-top:14px;">Conclusões de leitura</div>${completionsChartHtml}` : ''}
     ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
         <span class="diary-line-date">${fmtDate(l.date)}</span>
@@ -2223,23 +2212,31 @@ function renderBookDetail(b){
     ${readingLogHtml}
   `;
 }
-function addQuickCompletion(bookId){
-  const b = DB.books.find(x=>x.id===bookId);
-  if(!b) return;
-  const date = document.getElementById('quickCompletionDate').value || new Date().toISOString().slice(0,10);
-  const rating = Number(document.getElementById('quickCompletionRating').value)||0;
-  if(!Array.isArray(b.completions)) b.completions = [];
-  b.completions.push({date, rating});
-  b.completions.sort((a,c)=> a.date.localeCompare(c.date));
-  save();
-  renderBookDetail(b);
-  renderAll();
+function toggleQuickLogValueField(sel){
+  const valueInput = document.getElementById('quickLogValue');
+  if(!valueInput) return;
+  const hide = sel.value==='finished';
+  valueInput.style.display = hide ? 'none' : '';
 }
 function addQuickPageLog(bookId){
   const b = DB.books.find(x=>x.id===bookId);
   if(!b) return;
   const date = document.getElementById('quickLogDate').value || new Date().toISOString().slice(0,10);
   const mode = document.getElementById('quickLogMode').value;
+  if(mode==='finished'){
+    if(!Array.isArray(b.completions)) b.completions = [];
+    const already = b.completions.some(c=>c.date===date);
+    if(!already){ b.completions.push({date, rating:b.rating||0}); }
+    b.completions.sort((a,c)=> a.date.localeCompare(c.date));
+    b.status = 'lido';
+    b.finishDate = date;
+    if(!b.startDate) b.startDate = date;
+    if(b.totalPages) b.currentPage = b.totalPages;
+    save();
+    renderBookDetail(b);
+    renderAll();
+    return;
+  }
   const rawVal = Number(document.getElementById('quickLogValue').value)||0;
   const before = b.currentPage||0;
   let pages = 0;

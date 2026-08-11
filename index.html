@@ -698,15 +698,16 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         </div>
         <div class="diary-form-row">
           <div class="field" style="flex:0 0 165px;"><label>Data</label><input type="date" id="dEntryDate"></div>
-          <div class="field" style="flex:1;min-width:160px;"><label>Livro</label><select id="dEntryBook"></select></div>
+          <div class="field" style="flex:1;min-width:160px;"><label>Livro</label><select id="dEntryBook" onchange="updateDiaryModeForBook()"></select></div>
         </div>
+        <div id="dEntryHistoryHint" style="display:none;font-size:11.5px;color:var(--ink-soft);margin:-6px 0 10px;">📚 Livro já lido — esse registro só entra no histórico de dias de leitura, sem mexer no progresso ou nos dados do livro.</div>
         <div class="diary-form-row">
           <div class="field" style="flex:1;"><label>Páginas</label>
             <div style="display:flex;gap:6px;">
               <select id="dEntryMode" class="select-sm" style="flex:0 0 90px;">
                 <option value="delta">+ lidas</option>
-                <option value="current">atual</option>
-                <option value="percent">%</option>
+                <option value="current" id="dEntryModeCurrentOpt">atual</option>
+                <option value="percent" id="dEntryModePercentOpt">%</option>
               </select>
               <input type="number" id="dEntryPages" min="0" placeholder="ex: 24" style="flex:1;">
             </div>
@@ -2167,16 +2168,18 @@ function renderBookDetail(b){
       </div></div>
     `;
   }
+  const isFinishedBook = b.status==='lido';
   const readingLogHtml = `
     <div class="detail-section-label">📅 Histórico de leitura deste livro</div>
     ${progressChartHtml}
+    ${isFinishedBook ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;">📚 Esse livro já está marcado como lido — os registros abaixo servem só pra reconstruir o histórico de dias de leitura (ex: uma leitura antiga), sem alterar o progresso ou os dados do livro.</div>` : ''}
     <div class="quick-log-row">
       <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
       <select id="quickLogMode" class="select-sm" onchange="toggleQuickLogValueField(this)">
         <option value="delta">+ páginas lidas</option>
-        <option value="current">página atual</option>
+        ${!isFinishedBook ? `<option value="current">página atual</option>
         <option value="percent">% lido</option>
-        <option value="finished">✔️ concluí a leitura</option>
+        <option value="finished">✔️ concluí a leitura</option>` : ''}
       </select>
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
@@ -2239,29 +2242,20 @@ function addQuickPageLog(bookId){
   }
   const rawVal = Number(document.getElementById('quickLogValue').value)||0;
   const before = b.currentPage||0;
-  // Livro já marcado como lido: a página atual já está no máximo, então "avanço" não
-  // faz sentido — nesse caso o valor informado é tratado como o registro da sessão em si
-  // (permite lançar um histórico com data passada sem mexer no status/página do livro).
-  const isFinishedBook = b.status==='lido';
   let pages = 0;
   if(mode==='delta'){
     pages = rawVal;
   } else if(mode==='current'){
-    pages = isFinishedBook ? rawVal : (rawVal - before);
+    pages = rawVal - before;
   } else if(mode==='percent'){
     if(!b.totalPages){ alert('Cadastre o total de páginas do livro pra usar o registro por porcentagem 🌱'); return; }
     const targetPage = Math.round(b.totalPages * (rawVal/100));
-    pages = isFinishedBook ? targetPage : (targetPage - before);
+    pages = targetPage - before;
   }
-  if(pages<=0){
-    alert(isFinishedBook ? 'Informe um valor maior que zero pra registrar essa sessão de leitura. 🌱' : 'Esse valor não representa avanço em relação ao último registro (página atual: '+before+'). 🌱');
-    return;
-  }
+  if(pages<=0){ alert('Esse valor não representa avanço em relação ao último registro (página atual: '+before+'). 🌱'); return; }
   DB.logs.push({ id:uid(), date, bookId, pagesRead:pages, minutesRead:0, note:'', mood:'' });
-  if(!isFinishedBook){
-    b.currentPage = Math.min(before+pages, b.totalPages||(before+pages));
-    if(b.status==='quero-ler'){ b.status='lendo'; if(!b.startDate) b.startDate = date; }
-  }
+  b.currentPage = Math.min(before+pages, b.totalPages||(before+pages));
+  if(b.status==='quero-ler'){ b.status='lendo'; if(!b.startDate) b.startDate = date; }
   save();
   renderBookDetail(b);
   renderAll();
@@ -2457,6 +2451,11 @@ function deleteBook(){
     save();
     renderAll();
   });
+  if(critDetailReturnContext){
+    const ctx = critDetailReturnContext;
+    critDetailReturnContext = null;
+    openCritDetail(ctx.id, ctx.kind);
+  }
 }
 
 /* ============ DIÁRIO ============ */
@@ -2474,6 +2473,20 @@ function populateDiaryBookSelect(){
   const sorted = [...DB.books].sort((a,b)=> (a.status==='lendo'?-1:0) - (b.status==='lendo'?-1:0) || a.title.localeCompare(b.title));
   sel.innerHTML = '<option value="">— sem livro específico —</option>' + sorted.map(b=>`<option value="${b.id}">${esc(b.title)}${b.status==='lendo'?' (lendo)':''}</option>`).join('');
   sel.value = cur;
+  updateDiaryModeForBook();
+}
+function updateDiaryModeForBook(){
+  const bookId = document.getElementById('dEntryBook').value;
+  const b = DB.books.find(x=>x.id===bookId);
+  const isFinished = !!(b && b.status==='lido');
+  const hint = document.getElementById('dEntryHistoryHint');
+  const curOpt = document.getElementById('dEntryModeCurrentOpt');
+  const pctOpt = document.getElementById('dEntryModePercentOpt');
+  const modeSel = document.getElementById('dEntryMode');
+  if(hint) hint.style.display = isFinished ? 'block' : 'none';
+  if(curOpt) curOpt.style.display = isFinished ? 'none' : '';
+  if(pctOpt) pctOpt.style.display = isFinished ? 'none' : '';
+  if(isFinished && modeSel && modeSel.value!=='delta'){ modeSel.value = 'delta'; }
 }
 function addDiaryEntry(){
   const date = document.getElementById('dEntryDate').value || new Date().toISOString().slice(0,10);
@@ -3883,10 +3896,9 @@ document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if(e.key==='Escape'){
-    const bookDetailOv = document.getElementById('bookDetailModalOverlay');
-    if(bookDetailOv && bookDetailOv.classList.contains('open') && critDetailReturnContext){
-      // veio de uma meta/desafio aberta: fecha só o livro e volta pra meta/desafio, sem fechar tudo
+    if(document.getElementById('bookDetailModalOverlay').classList.contains('open')){
       closeBookDetail();
+      document.querySelectorAll('.overlay.open').forEach(ov=> { if(ov.id!=='critDetailModalOverlay') ov.classList.remove('open'); });
     } else {
       document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
     }

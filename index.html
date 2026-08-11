@@ -906,10 +906,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 <!-- ===== MODAL: BOOK DETAIL (read-only) ===== -->
 <div class="overlay" id="bookDetailModalOverlay">
   <div class="modal" style="max-width:560px;">
-    <button class="modal-close" onclick="closeBookDetail()">✕</button>
+    <button class="modal-close" onclick="closeModal('bookDetailModalOverlay')">✕</button>
     <div id="bookDetailContent"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeBookDetail()">Fechar</button>
+      <button class="btn btn-ghost" onclick="closeModal('bookDetailModalOverlay')">Fechar</button>
       <button class="btn btn-primary" id="bookDetailEditBtn">✎ Editar</button>
     </div>
   </div>
@@ -923,13 +923,14 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <input type="hidden" id="bookId">
     <div class="cover-upload">
       <img class="cover-preview" id="coverPreview">
-      <div>
+      <div style="flex:1;min-width:0;">
         <input type="file" id="coverInput" accept="image/*" onchange="handleCoverUpload(event)">
         <div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px;">Envie a capa do livro (jpg/png)</div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <input type="text" id="coverUrlInput" placeholder="ou cole o link da imagem aqui" style="flex:1;font-size:12.5px;padding:6px 8px;border-radius:6px;border:1px solid var(--blush-deep);">
-          <button type="button" class="btn btn-sage" style="padding:6px 12px;font-size:12.5px;" onclick="handleCoverUrl()">Usar link</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <input type="text" id="coverUrlInput" placeholder="ou cole o link da imagem..." style="flex:1;min-width:0;font-size:12.5px;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="handleCoverUrl()">Usar link</button>
         </div>
+        <div id="coverUrlError" style="font-size:11px;color:#c0392b;margin-top:4px;display:none;">Não foi possível carregar essa imagem.</div>
       </div>
     </div>
     <div class="grid2">
@@ -986,7 +987,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     </div>
     <div class="field">
       <label>Cor do livro no calendário (opcional)</label>
-      <div id="coverColorSuggestions" style="display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
       <div class="color-wheel-row">
         <div class="color-wheel" id="colorWheel" onclick="pickColorFromWheel(event)">
           <div class="color-wheel-dot" id="colorWheelDot"></div>
@@ -1002,6 +1002,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <span id="bColorHexError" style="font-size:12px;color:#c0392b;display:none;">hex inválido</span>
       </div>
       <div class="color-swatches" id="colorSwatches" style="margin-top:10px;"></div>
+      <div id="suggestedColorsWrap" style="margin-top:12px;display:none;">
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;">Cores sugeridas da capa:</div>
+        <div class="color-swatches" id="suggestedColors"></div>
+      </div>
     </div>
     <div class="grid2">
       <div class="field"><label>Preço estimado (opcional)</label><input type="text" id="bPrice" placeholder="ex: R$ 39,90"></div>
@@ -1014,30 +1018,9 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div id="lentReturnRow" style="display:none;margin:-8px 0 12px;">
       <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('bLentTo').value='';document.getElementById('bLentDate').value='';">✔️ Marcar como devolvido</button>
     </div>
-    <div id="historyField" class="field" style="display:none;">
-      <label>Histórico de leituras deste livro</label>
-      <div id="completionsList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
-      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px;">
-        <div style="flex:1;min-width:130px;">
-          <label style="font-size:11.5px;display:block;margin-bottom:3px;">Data que concluiu (pode ser retroativa)</label>
-          <input type="date" id="retroCompletionDate">
-        </div>
-        <div>
-          <label style="font-size:11.5px;display:block;margin-bottom:3px;">Nota</label>
-          <select id="retroCompletionRating" style="padding:7px 8px;border-radius:8px;border:1px solid var(--blush-deep);">
-            <option value="0">Sem nota</option>
-            <option value="1">⭐</option>
-            <option value="2">⭐⭐</option>
-            <option value="3">⭐⭐⭐</option>
-            <option value="4">⭐⭐⭐⭐</option>
-            <option value="5">⭐⭐⭐⭐⭐</option>
-          </select>
-        </div>
-        <button type="button" class="btn btn-sage btn-sm" onclick="addRetroCompletion()">+ Adicionar ao histórico</button>
-      </div>
-      <div id="rereadRow" style="display:none;">
-        <button class="btn btn-ghost btn-sm" id="markRereadBtn" type="button" onclick="markReread()">🔁 Comecei a reler agora? Marcar releitura em andamento</button>
-      </div>
+    <div id="rereadRow" style="display:none;margin-bottom:6px;">
+      <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
+      <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="deleteBookBtn" style="display:none;" onclick="deleteBook()">Excluir</button>
@@ -1975,13 +1958,6 @@ function renderBookGoalsChallengesPicker(bookId){
 function pickColor(c){
   selectedColor = c;
   renderColorSwatches();
-  const sugEl = document.getElementById('coverColorSuggestions');
-  if(sugEl){
-    sugEl.querySelectorAll('.color-swatch').forEach(s=> s.classList.toggle('sel', s.style.background && sameHex(s.getAttribute('title'), c)));
-  }
-}
-function sameHex(a,b){
-  return (a||'').toUpperCase() === (b||'').toUpperCase();
 }
 function toggleFavorite(){
   selectedFavorite = !selectedFavorite;
@@ -2013,77 +1989,28 @@ function handleCoverUpload(e){
       uploadedCover = canvas.toDataURL('image/jpeg', 0.82);
       document.getElementById('coverPreview').src = uploadedCover;
       document.getElementById('coverPreview').textContent='';
-      renderCoverColorSuggestions(extractPaletteFromImage(img));
+      document.getElementById('coverUrlInput').value='';
+      suggestColorsFromImage(canvas);
     };
     img.src = evt.target.result;
   };
   reader.readAsDataURL(file);
 }
-function rgbToHex(r,g,b){
-  return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('').toUpperCase();
-}
-function extractPaletteFromImage(img){
-  try{
-    const size = 50;
-    const c = document.createElement('canvas');
-    c.width = size; c.height = size;
-    const ctx = c.getContext('2d');
-    ctx.drawImage(img, 0, 0, size, size);
-    const data = ctx.getImageData(0, 0, size, size).data;
-    const buckets = {};
-    for(let i=0;i<data.length;i+=4){
-      const a = data[i+3];
-      if(a<128) continue;
-      const r = data[i], g = data[i+1], b = data[i+2];
-      const qr = Math.round(r/24)*24, qg = Math.round(g/24)*24, qb = Math.round(b/24)*24;
-      const key = qr+','+qg+','+qb;
-      if(!buckets[key]) buckets[key] = {r:0,g:0,b:0,count:0};
-      buckets[key].r+=r; buckets[key].g+=g; buckets[key].b+=b; buckets[key].count++;
-    }
-    let arr = Object.values(buckets).map(o=>({r:Math.round(o.r/o.count),g:Math.round(o.g/o.count),b:Math.round(o.b/o.count),count:o.count}));
-    arr.sort((a,b)=>b.count-a.count);
-    const isNearWhite = c=> c.r>238 && c.g>238 && c.b>238;
-    const isNearBlack = c=> c.r<18 && c.g<18 && c.b<18;
-    const vivid = arr.filter(c=>!isNearWhite(c) && !isNearBlack(c));
-    const pool = vivid.length>=5 ? vivid : arr;
-    const result = [];
-    for(const c of pool){
-      if(result.length>=5) break;
-      const tooClose = result.some(r=>Math.abs(r.r-c.r)+Math.abs(r.g-c.g)+Math.abs(r.b-c.b) < 70);
-      if(!tooClose) result.push(c);
-    }
-    if(result.length<5){
-      for(const c of arr){
-        if(result.length>=5) break;
-        if(!result.includes(c)) result.push(c);
-      }
-    }
-    return result.slice(0,5).map(c=>rgbToHex(c.r,c.g,c.b));
-  }catch(err){
-    // canvas "manchada" por imagem de outro domínio sem CORS liberado — não dá pra ler os pixels
-    return [];
-  }
-}
-function renderCoverColorSuggestions(colors){
-  const el = document.getElementById('coverColorSuggestions');
-  if(!el) return;
-  if(!colors || !colors.length){
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
-  el.style.display = 'flex';
-  el.innerHTML = '<span style="font-size:11.5px;color:var(--ink-soft);">✨ Cores da capa:</span>' +
-    colors.map(c=>`<div class="color-swatch ${selectedColor===c?'sel':''}" style="width:26px;height:26px;background:${c};" title="${c}" onclick="pickColor('${c}')"></div>`).join('');
-}
 function handleCoverUrl(){
   const input = document.getElementById('coverUrlInput');
+  const errorEl = document.getElementById('coverUrlError');
   const url = (input.value||'').trim();
+  errorEl.style.display = 'none';
+  errorEl.style.color = '#c0392b';
   if(!url) return;
-  const preview = document.getElementById('coverPreview');
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = ()=>{
+    const preview = document.getElementById('coverPreview');
+    preview.src = url;
+    preview.textContent = '';
+    document.getElementById('coverInput').value = '';
+    // tenta converter a imagem do link para base64 (fica salva no JSON, sem depender do link no futuro)
     try{
       const canvas = document.createElement('canvas');
       const maxW = 300;
@@ -2091,20 +2018,66 @@ function handleCoverUrl(){
       canvas.width = img.width*scale;
       canvas.height = img.height*scale;
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      uploadedCover = canvas.toDataURL('image/jpeg', 0.82);
+      uploadedCover = canvas.toDataURL('image/jpeg', 0.82); // lança erro se a imagem for de outra origem sem CORS liberado
+      preview.src = uploadedCover;
+      suggestColorsFromImage(canvas);
     }catch(err){
-      // imagem de um servidor que bloqueia conversão (CORS) — guarda o link direto
+      // não foi possível converter (CORS bloqueado pelo site de origem): mantém o link como está
       uploadedCover = url;
+      errorEl.textContent = 'Não foi possível converter essa imagem para salvar permanentemente — o link foi usado como capa, mas pode parar de funcionar se sair do ar.';
+      errorEl.style.color = 'var(--ink-soft)';
+      errorEl.style.display = 'block';
+      document.getElementById('suggestedColorsWrap').style.display='none';
     }
-    preview.src = uploadedCover;
-    preview.textContent = '';
-    input.value = '';
-    renderCoverColorSuggestions(extractPaletteFromImage(img));
   };
   img.onerror = ()=>{
-    alert('Não consegui carregar essa imagem. Verifique o link e tente de novo.');
+    errorEl.textContent = 'Não foi possível carregar essa imagem.';
+    errorEl.style.color = '#c0392b';
+    errorEl.style.display = 'block';
   };
   img.src = url;
+}
+function suggestColorsFromImage(canvas){
+  const wrap = document.getElementById('suggestedColorsWrap');
+  const holder = document.getElementById('suggestedColors');
+  try{
+    const ctx = canvas.getContext('2d');
+    const {data} = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const buckets = {};
+    const step = 24; // quantização por canal, agrupa tons próximos
+    for(let i=0;i<data.length;i+=4*7){ // amostra a cada 7 pixels p/ performance
+      const a = data[i+3];
+      if(a<128) continue;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      // ignora tons quase brancos/pretos/cinzas puros (pouco úteis como cor de destaque)
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      if(max>245 && min>235) continue;
+      if(max<18) continue;
+      const key = [Math.round(r/step),Math.round(g/step),Math.round(b/step)].join(',');
+      if(!buckets[key]) buckets[key] = {count:0, r:0, g:0, b:0};
+      buckets[key].count++;
+      buckets[key].r += r; buckets[key].g += g; buckets[key].b += b;
+    }
+    const sorted = Object.values(buckets).sort((a,b)=>b.count-a.count);
+    const picked = [];
+    const toHex = n => Math.round(n).toString(16).padStart(2,'0');
+    for(const bucket of sorted){
+      const r = bucket.r/bucket.count, g = bucket.g/bucket.count, b = bucket.b/bucket.count;
+      const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+      // evita cores muito parecidas entre si nas sugestões
+      const tooClose = picked.some(p=>{
+        const pr = parseInt(p.substring(1,3),16), pg = parseInt(p.substring(3,5),16), pb = parseInt(p.substring(5,7),16);
+        return Math.abs(pr-r)+Math.abs(pg-g)+Math.abs(pb-b) < 60;
+      });
+      if(!tooClose) picked.push(hex);
+      if(picked.length>=5) break;
+    }
+    if(picked.length===0){ wrap.style.display='none'; return; }
+    holder.innerHTML = picked.map(c=>`<div class="color-swatch" style="background:${c}" title="${c}" onclick="pickColor('${c}')"></div>`).join('');
+    wrap.style.display = 'block';
+  }catch(err){
+    wrap.style.display = 'none';
+  }
 }
 /* ============ BOOK DETAIL (read-only view) ============ */
 function openBookDetail(id){
@@ -2113,15 +2086,6 @@ function openBookDetail(id){
   renderBookDetail(b);
   document.getElementById('bookDetailEditBtn').onclick = ()=>{ closeModal('bookDetailModalOverlay'); openBookModal(b.id); };
   document.getElementById('bookDetailModalOverlay').classList.add('open');
-}
-let critDetailReturnContext = null;
-function closeBookDetail(){
-  closeModal('bookDetailModalOverlay');
-  if(critDetailReturnContext){
-    const ctx = critDetailReturnContext;
-    critDetailReturnContext = null;
-    openCritDetail(ctx.id, ctx.kind);
-  }
 }
 function renderBookDetail(b){
   const p = pct(b);
@@ -2170,40 +2134,19 @@ function renderBookDetail(b){
       </div></div>
     `;
   }
-  let completionsChartHtml = '';
-  if(hist.length){
-    const sortedHist = hist.slice().sort((a,c)=>a.date.localeCompare(c.date));
-    completionsChartHtml = `
-      <div class="mini-chart-scroll"><div class="bar-chart">
-        ${sortedHist.map(h=>{
-          const r = Number(h.rating)||0;
-          const heightPct = r>0 ? (r/5)*100 : 14;
-          const valueLbl = r>0 ? '⭐'.repeat(r) : '✓';
-          return `
-          <div class="bar-col" data-tooltip="${fmtDate(h.date)}${r?' — '+r+' estrelas':''}">
-            <span class="bar-value">${valueLbl}</span>
-            <div class="bar" style="height:${heightPct}%"></div>
-            <div class="bar-lbl" style="font-size:9px;">${fmtDate(h.date)}</div>
-          </div>`;
-        }).join('')}
-      </div></div>
-    `;
-  }
   const readingLogHtml = `
     <div class="detail-section-label">📅 Histórico de leitura deste livro</div>
     ${progressChartHtml}
     <div class="quick-log-row">
       <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
-      <select id="quickLogMode" class="select-sm" onchange="toggleQuickLogValueField(this)">
+      <select id="quickLogMode" class="select-sm">
         <option value="delta">+ páginas lidas</option>
         <option value="current">página atual</option>
         <option value="percent">% lido</option>
-        <option value="finished">✔️ concluí a leitura</option>
       </select>
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
-    ${hist.length ? `<div class="detail-section-label" style="margin-top:14px;">Conclusões de leitura</div>${completionsChartHtml}` : ''}
     ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
         <span class="diary-line-date">${fmtDate(l.date)}</span>
@@ -2231,34 +2174,15 @@ function renderBookDetail(b){
     ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
     ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
     ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+    ${hist.length>1?`<div class="detail-section-label">Releituras</div><div class="detail-text">Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}</div>`:''}
     ${readingLogHtml}
   `;
-}
-function toggleQuickLogValueField(sel){
-  const valueInput = document.getElementById('quickLogValue');
-  if(!valueInput) return;
-  const hide = sel.value==='finished';
-  valueInput.style.display = hide ? 'none' : '';
 }
 function addQuickPageLog(bookId){
   const b = DB.books.find(x=>x.id===bookId);
   if(!b) return;
   const date = document.getElementById('quickLogDate').value || new Date().toISOString().slice(0,10);
   const mode = document.getElementById('quickLogMode').value;
-  if(mode==='finished'){
-    if(!Array.isArray(b.completions)) b.completions = [];
-    const already = b.completions.some(c=>c.date===date);
-    if(!already){ b.completions.push({date, rating:b.rating||0}); }
-    b.completions.sort((a,c)=> a.date.localeCompare(c.date));
-    b.status = 'lido';
-    b.finishDate = date;
-    if(!b.startDate) b.startDate = date;
-    if(b.totalPages) b.currentPage = b.totalPages;
-    save();
-    renderBookDetail(b);
-    renderAll();
-    return;
-  }
   const rawVal = Number(document.getElementById('quickLogValue').value)||0;
   const before = b.currentPage||0;
   let pages = 0;
@@ -2286,9 +2210,8 @@ function openBookModal(id){
   document.getElementById('bookId').value = id||'';
   document.getElementById('coverInput').value='';
   document.getElementById('coverUrlInput').value='';
-  renderCoverColorSuggestions([]);
-  document.getElementById('retroCompletionDate').value='';
-  document.getElementById('retroCompletionRating').value='0';
+  document.getElementById('coverUrlError').style.display='none';
+  document.getElementById('suggestedColorsWrap').style.display='none';
   const preview = document.getElementById('coverPreview');
   preview.removeAttribute('src'); preview.textContent='📖';
   document.getElementById('deleteBookBtn').style.display = id ? 'inline-flex':'none';
@@ -2333,24 +2256,35 @@ function openBookModal(id){
     }
     if(b.cover){
       preview.src = b.cover; preview.textContent=''; uploadedCover = b.cover;
-      const existingImg = new Image();
-      existingImg.crossOrigin = 'anonymous';
-      existingImg.onload = ()=> renderCoverColorSuggestions(extractPaletteFromImage(existingImg));
-      existingImg.src = b.cover;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = ()=>{
+        try{
+          const canvas = document.createElement('canvas');
+          const maxW = 300;
+          const scale = Math.min(1, maxW/img.width);
+          canvas.width = img.width*scale;
+          canvas.height = img.height*scale;
+          canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+          suggestColorsFromImage(canvas);
+        }catch(err){ /* capa de outra origem sem CORS liberado: sem sugestões */ }
+      };
+      img.src = b.cover;
     }
     const rr = document.getElementById('rereadRow');
-    rr.style.display= b.status==='lido' ? 'block' : 'none';
-    editingCompletions = (b.completions||[]).slice();
-    document.getElementById('historyField').style.display = 'block';
-    renderCompletionsEditor();
+    const hist = b.completions||[];
+    if(b.status==='lido'){
+      rr.style.display='block';
+      document.getElementById('readHistoryInfo').textContent = hist.length>1 ? `Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}` : (hist.length===1 ? `Concluído em ${fmtDate(hist[0].date)}` : '');
+    } else {
+      rr.style.display='none';
+    }
   } else {
     document.getElementById('bookModalTitle').textContent = 'Novo livro';
     ['bTitle','bAuthor','bSaga','bSagaOrder','bGenre','bTotalPages','bCurrentPage','bStartDate','bFinishDate','bSynopsis','bThoughts','bQuote','bTags','bLentTo','bLentDate','bPrice','bStore'].forEach(f=> document.getElementById(f).value='');
     document.getElementById('bFormat').value='Físico';
     document.getElementById('bStatus').value='quero-ler';
     document.getElementById('rereadRow').style.display='none';
-    document.getElementById('historyField').style.display = 'none';
-    editingCompletions = [];
     document.getElementById('lentReturnRow').style.display='none';
     document.getElementById('finishEstimateInfo').textContent='';
     selectedFavorite = false;
@@ -2371,38 +2305,6 @@ function markReread(){
   document.getElementById('rereadRow').style.display='none';
   alert('Prontinho! Ajustei o status para "Lendo" e zerei a página atual. Clique em Salvar livro para confirmar a releitura 🌱');
 }
-let editingCompletions = [];
-function renderCompletionsEditor(){
-  const list = document.getElementById('completionsList');
-  if(!list) return;
-  const sorted = editingCompletions.slice().sort((a,c)=>a.date.localeCompare(c.date));
-  if(!sorted.length){
-    list.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);">Nenhuma conclusão registrada ainda.</div>';
-    return;
-  }
-  list.innerHTML = sorted.map(c=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--cream);border-radius:8px;padding:6px 10px;font-size:12.5px;">
-      <span>${fmtDate(c.date)} ${c.rating?'· '+starsHtml(c.rating):''}</span>
-      <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;" onclick="removeRetroCompletion('${c.date}')" title="Remover">✕</button>
-    </div>
-  `).join('');
-}
-function addRetroCompletion(){
-  const date = document.getElementById('retroCompletionDate').value;
-  if(!date){ alert('Escolha a data em que você concluiu essa leitura 🌱'); return; }
-  const rating = Number(document.getElementById('retroCompletionRating').value)||0;
-  const existingEntry = editingCompletions.find(c=>c.date===date);
-  if(existingEntry){ existingEntry.rating = rating; }
-  else { editingCompletions.push({date, rating}); }
-  editingCompletions.sort((a,c)=>a.date.localeCompare(c.date));
-  document.getElementById('retroCompletionDate').value = '';
-  document.getElementById('retroCompletionRating').value = '0';
-  renderCompletionsEditor();
-}
-function removeRetroCompletion(date){
-  editingCompletions = editingCompletions.filter(c=>c.date!==date);
-  renderCompletionsEditor();
-}
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function saveBook(){
   const title = document.getElementById('bTitle').value.trim();
@@ -2420,13 +2322,12 @@ function saveBook(){
   const status = document.getElementById('bStatus').value;
   const finishDate = document.getElementById('bFinishDate').value;
 
-  const completions = editingCompletions.slice();
+  const completions = existing ? (existing.completions||[]).slice() : [];
   if(status==='lido' && finishDate){
-    const exists = completions.find(c=>c.date===finishDate);
-    if(exists){ exists.rating = selectedRating; }
-    else { completions.push({date:finishDate, rating:selectedRating}); }
+    const last = completions[completions.length-1];
+    if(!last || last.date !== finishDate){ completions.push({date:finishDate, rating:selectedRating}); }
+    else { last.rating = selectedRating; }
   }
-  completions.sort((a,c)=> a.date.localeCompare(c.date));
 
   let priority = existing ? existing.priority : null;
   if(status==='quero-ler' && !priority){
@@ -3663,13 +3564,11 @@ function getCriteriaBooks(c){
     return true;
   });
 }
-let currentCritDetail = null;
 function openGoalDetail(id){ openCritDetail(id, 'goal'); }
 function openChallengeDetail(id){ openCritDetail(id, 'challenge'); }
 function openCritDetail(id, kind){
   const item = kind==='goal' ? DB.goals.find(x=>x.id===id) : DB.challenges.find(x=>x.id===id);
   if(!item) return;
-  currentCritDetail = {id, kind};
   const books = getCriteriaBooks(item).sort((a,b)=>a.title.localeCompare(b.title));
   critDetailBooksCache = books;
   document.getElementById('critDetailTitle').textContent = (item.icon?item.icon+' ':(kind==='challenge'?'🎯 ':'')) + item.title;
@@ -3695,15 +3594,10 @@ function renderCritStats(item, books){
     <div style="grid-column:1/-1;"><div class="vine-track" style="height:9px;margin-top:2px;"><div class="vine-fill" style="width:${pct}%"></div></div></div>
   `;
 }
-function openBookFromCritDetail(bookId){
-  critDetailReturnContext = currentCritDetail;
-  closeModal('critDetailModalOverlay');
-  openBookDetail(bookId);
-}
 function renderCritDetailList(books){
   const el = document.getElementById('critDetailBookList');
   el.innerHTML = books.length ? books.map(b=>`
-    <div class="dbl-item" onclick="openBookFromCritDetail('${b.id}')">
+    <div class="dbl-item" onclick="closeModal('critDetailModalOverlay'); openBookDetail('${b.id}')">
       ${coverHtml(b,'cover')}
       <div style="flex:1;min-width:0;">
         <div class="dbl-title">${esc(b.title)}</div>
@@ -3936,10 +3830,6 @@ document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if(e.key==='Escape'){
-    const bookDetail = document.getElementById('bookDetailModalOverlay');
-    if(bookDetail && bookDetail.classList.contains('open')){ closeBookDetail(); return; }
-    const bookModal = document.getElementById('bookModalOverlay');
-    if(bookModal && bookModal.classList.contains('open')){ cancelBookEdit(); return; }
     document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
     return;
   }

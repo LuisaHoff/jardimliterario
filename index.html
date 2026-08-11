@@ -2173,14 +2173,20 @@ function renderBookDetail(b){
     <div class="quick-log-row">
       <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
       <select id="quickLogMode" class="select-sm" onchange="toggleQuickLogValueField(this)">
+        ${b.status==='lido' ? `
+        <option value="delta">+ páginas lidas (sessão retroativa)</option>
+        <option value="finished">✔️ registrar nova conclusão / releitura</option>
+        ` : `
         <option value="delta">+ páginas lidas</option>
         <option value="current">página atual</option>
         <option value="percent">% lido</option>
         <option value="finished">✔️ concluí a leitura</option>
+        `}
       </select>
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
+    ${b.status==='lido' ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">🌱 Livro já lido: use "+ páginas lidas" pra adicionar sessões de leitura retroativas (datas passadas) sem alterar o status do livro.</div>` : ''}
     ${hist.length ? `<div class="detail-section-label" style="margin-top:14px;">Conclusões de leitura</div>${completionsChartHtml}` : ''}
     ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
@@ -2238,6 +2244,18 @@ function addQuickPageLog(bookId){
     return;
   }
   const rawVal = Number(document.getElementById('quickLogValue').value)||0;
+
+  // Livro já marcado como lido: permite registrar sessões de leitura retroativas
+  // (datas passadas) sem exigir avanço de página e sem mexer no status/página atual.
+  if(b.status==='lido'){
+    if(rawVal<=0){ alert('Informe quantas páginas você leu nessa sessão retroativa. 🌱'); return; }
+    DB.logs.push({ id:uid(), date, bookId, pagesRead:rawVal, minutesRead:0, note:'', mood:'' });
+    save();
+    renderBookDetail(b);
+    renderAll();
+    return;
+  }
+
   const before = b.currentPage||0;
   let pages = 0;
   if(mode==='delta'){
@@ -3874,7 +3892,13 @@ document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if(e.key==='Escape'){
-    document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
+    const bookDetailOv = document.getElementById('bookDetailModalOverlay');
+    if(bookDetailOv && bookDetailOv.classList.contains('open') && critDetailReturnContext){
+      // veio de uma meta/desafio aberta: fecha só o livro e volta pra meta/desafio, sem fechar tudo
+      closeBookDetail();
+    } else {
+      document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
+    }
     return;
   }
   if(isTyping) return;

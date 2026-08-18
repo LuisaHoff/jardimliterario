@@ -565,6 +565,12 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 /* ----- Phone (≤640px): sidebar becomes a fixed bottom tab bar ----- */
 @media(max-width:640px){
   html,body{overflow-x:hidden;}
+  /* evita o zoom automático do iOS ao tocar em campos (que "maximiza" a tela) */
+  .field input, .field select, .field textarea,
+  .toolbar input[type=text], .toolbar select,
+  input[type=text], input[type=number], input[type=date], input[type=file], select, textarea{
+    font-size:16px !important;
+  }
   .sidebar{
     position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;
     flex-direction:row;justify-content:flex-start;align-items:stretch;

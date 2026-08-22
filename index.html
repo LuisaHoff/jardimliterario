@@ -690,7 +690,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="exportBackup()">⬇️ Backup</button>
         <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;" onclick="document.getElementById('importInput').click()">⬆️ Importar</button>
       </div>
-      <input type="file" id="importInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+      <input type="file" id="importInput" accept=".json,application/json,text/plain" style="display:none;" onchange="importBackup(event)">
       <button class="btn btn-ghost btn-sm" id="reminderToggleBtn" style="width:100%;justify-content:center;margin-top:8px;" onclick="toggleDailyReminder()">🔔 Lembrete diário</button>
       <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px;" onclick="openShortcutsModal()">⌨️ Atalhos</button>
     </div>
@@ -1041,7 +1041,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <button class="btn btn-ghost" onclick="exportBackup()">⬇️ Baixar backup</button>
           <button class="btn btn-ghost" onclick="document.getElementById('importInputMobile').click()">⬆️ Importar backup</button>
         </div>
-        <input type="file" id="importInputMobile" accept=".json" style="display:none;" onchange="importBackup(event)">
+        <input type="file" id="importInputMobile" accept=".json,application/json,text/plain" style="display:none;" onchange="importBackup(event)">
       </div>
 
       <div class="card" style="padding:20px;margin-bottom:16px;">
@@ -4294,9 +4294,11 @@ function importBackup(e){
   const reader = new FileReader();
   reader.onload = evt=>{
     try{
-      const data = JSON.parse(evt.target.result);
-      if(!data || !Array.isArray(data.books)){ alert('Esse arquivo não parece um backup válido.'); return; }
-      if(!confirm('Importar este backup vai substituir todos os dados atuais do app. Deseja continuar?')) return;
+      let text = evt.target.result;
+      if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // remove BOM, comum em arquivos compartilhados por outros apps
+      const data = JSON.parse(text.trim());
+      if(!data || !Array.isArray(data.books)){ alert('Esse arquivo não parece um backup válido do Jardim Literário (não encontrei a lista de livros nele).'); return; }
+      if(!confirm(`Importar este backup vai substituir todos os dados atuais do app (${data.books.length} livro(s) no arquivo). Deseja continuar?`)) return;
       DB = data;
       if(!Array.isArray(DB.logs)) DB.logs = [];
       migrateData();
@@ -4305,9 +4307,10 @@ function importBackup(e){
       renderAll();
       alert('Backup importado com sucesso! 🌷');
     }catch(err){
-      alert('Não consegui ler esse arquivo. Confira se é um backup válido do Jardim Literário.');
+      alert('Não consegui ler esse arquivo (' + err.message + '). Confira se é um backup .json válido do Jardim Literário.');
     }
   };
+  reader.onerror = ()=>{ alert('Não consegui abrir esse arquivo. Tente selecioná-lo novamente.'); };
   reader.readAsText(file);
   e.target.value = '';
 }

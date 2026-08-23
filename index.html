@@ -1030,6 +1030,12 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="vine-divider"></div>
 
       <div class="card" style="padding:20px;margin-bottom:16px;">
+        <div class="section-title">🗜️ Armazenamento e capas</div>
+        <div id="storageInfoText" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"></div>
+        <button class="btn btn-sage" onclick="optimizeCovers()">🗜️ Otimizar capas</button>
+      </div>
+
+      <div class="card" style="padding:20px;margin-bottom:16px;">
         <div class="section-title">🎯 Meta de leitura</div>
         <div class="sidebar-goal" id="sidebarGoalTxtMobile" onclick="openGoalModal()" style="cursor:pointer;margin-bottom:0;">Meta: 0/0 livros ✎</div>
         <div class="mini-vine" style="margin-top:8px;"><i id="sidebarGoalBarMobile" style="width:0%"></i></div>
@@ -1543,7 +1549,18 @@ function migrateData(){
   });
 }
 migrateData();
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DB)); }
+function save(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+  }catch(err){
+    if(err && (err.name==='QuotaExceededError' || err.code===22 || err.code===1014)){
+      alert('⚠️ O armazenamento do navegador ficou cheio (isso costuma acontecer com muitas capas de livros salvas). Sua última alteração NÃO foi salva.\n\nVá em "Mais" → "🗜️ Otimizar capas" pra liberar espaço, ou baixe um backup agora pra não perder nada.');
+    } else {
+      alert('Não consegui salvar essa alteração. Tente novamente — se persistir, baixe um backup pra garantir seus dados.');
+    }
+    console.error('Falha ao salvar:', err);
+  }
+}
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 
 /* ============ THEMES ============ */
@@ -1625,6 +1642,7 @@ function renderAll(){
   renderDiarioPage();
   renderJardim();
   renderMonthlyTbrs();
+  renderStorageInfo();
 }
 
 /* ============ HELPERS ============ */
@@ -2435,12 +2453,12 @@ function handleCoverUpload(e){
     const img = new Image();
     img.onload = ()=>{
       const canvas = document.createElement('canvas');
-      const maxW = 300;
+      const maxW = 220;
       const scale = Math.min(1, maxW/img.width);
       canvas.width = img.width*scale;
       canvas.height = img.height*scale;
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      uploadedCover = canvas.toDataURL('image/jpeg', 0.82);
+      uploadedCover = canvas.toDataURL('image/jpeg', 0.72);
       document.getElementById('coverPreview').src = uploadedCover;
       document.getElementById('coverPreview').textContent='';
       document.getElementById('coverUrlInput').value='';
@@ -2468,12 +2486,12 @@ function handleCoverUrl(){
     // tenta converter a imagem do link para base64 (fica salva no JSON, sem depender do link no futuro)
     try{
       const canvas = document.createElement('canvas');
-      const maxW = 300;
+      const maxW = 220;
       const scale = Math.min(1, maxW/img.width);
       canvas.width = img.width*scale;
       canvas.height = img.height*scale;
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      uploadedCover = canvas.toDataURL('image/jpeg', 0.82); // lança erro se a imagem for de outra origem sem CORS liberado
+      uploadedCover = canvas.toDataURL('image/jpeg', 0.72); // lança erro se a imagem for de outra origem sem CORS liberado
       preview.src = uploadedCover;
       suggestColorsFromImage(img);
     }catch(err){
@@ -4316,6 +4334,51 @@ function importBackup(e){
 }
 
 /* ============ LEMBRETE DIÁRIO ============ */
+/* ============ ARMAZENAMENTO / OTIMIZAR CAPAS ============ */
+function renderStorageInfo(){
+  const el = document.getElementById('storageInfoText');
+  if(!el) return;
+  const sizeBytes = new Blob([JSON.stringify(DB)]).size;
+  const sizeMB = (sizeBytes/1024/1024).toFixed(2);
+  const withCover = DB.books.filter(b=> b.cover && b.cover.startsWith('data:')).length;
+  el.textContent = `Seus dados ocupam aproximadamente ${sizeMB} MB (limite típico do navegador: 5 a 10 MB). ${withCover} livro(s) com capa salva.`;
+}
+function resizeImageDataUrl(dataUrl, maxW, quality){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const scale = Math.min(1, maxW/img.width);
+      if(scale>=1 && dataUrl.length < 40000){ resolve(dataUrl); return; } // já pequena, não mexe
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width*scale;
+      canvas.height = img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=> resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+async function optimizeCovers(){
+  const targets = DB.books.filter(b=> b.cover && b.cover.startsWith('data:'));
+  if(targets.length===0){ alert('Nenhuma capa salva localmente pra otimizar. 🌷'); return; }
+  const before = new Blob([JSON.stringify(DB)]).size;
+  let processed = 0;
+  for(const b of targets){
+    const newCover = await resizeImageDataUrl(b.cover, 220, 0.72);
+    if(newCover.length < b.cover.length){ b.cover = newCover; processed++; }
+  }
+  const after = new Blob([JSON.stringify(DB)]).size;
+  const savedMB = ((before-after)/1024/1024).toFixed(2);
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+    renderAll();
+    renderStorageInfo();
+    alert(`✅ ${processed} capa(s) otimizada(s)! Espaço liberado: ~${savedMB} MB.`);
+  }catch(err){
+    alert('As capas foram encolhidas, mas ainda não coube tudo no armazenamento do navegador. Considere remover a capa de alguns livros menos importantes, ou baixar um backup e continuar em outro dispositivo/navegador.');
+  }
+}
 function updateReminderBtnState(){
   const label = DB.settings.reminderEnabled ? '🔔 Lembrete ativado' : '🔔 Lembrete diário';
   const btn = document.getElementById('reminderToggleBtn');
@@ -4414,6 +4477,7 @@ document.addEventListener('keydown', function(e){
 renderAll();
 updateReminderBtnState();
 checkDailyReminder();
+renderStorageInfo();
 </script>
 </body>
 </html>

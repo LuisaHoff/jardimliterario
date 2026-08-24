@@ -1093,6 +1093,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
                 <input type="text" id="coverUrlInput" placeholder="cole o link da imagem...">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="handleCoverUrl()">Usar link</button>
               </div>
+              <div class="cover-url-row" style="margin-top:6px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="pasteCoverFromClipboard()">📋 Colar imagem</button>
+                <span style="font-size:11px;color:var(--ink-soft);">copie a imagem (Ctrl+C) e clique aqui, ou dê Ctrl+V nesta janela</span>
+              </div>
               <div id="coverUrlError" style="font-size:11px;color:#c0392b;margin-top:4px;display:none;">Não foi possível carregar essa imagem.</div>
             </div>
           </div>
@@ -2552,6 +2556,77 @@ function handleCoverUpload(e){
   };
   reader.readAsDataURL(file);
 }
+function applyCoverFromBlob(blob){
+  if(!blob) return;
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      const maxW = 420;
+      const scale = Math.min(1, maxW/img.width);
+      canvas.width = img.width*scale;
+      canvas.height = img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      uploadedCover = canvas.toDataURL('image/jpeg', 0.88);
+      uploadedCoverIsFile = true;
+      coverChanged = true;
+      document.getElementById('coverPreview').src = uploadedCover;
+      document.getElementById('coverPreview').textContent='';
+      document.getElementById('coverUrlInput').value='';
+      document.getElementById('coverInput').value='';
+      document.getElementById('coverFileName').textContent='Imagem colada';
+      const errorEl = document.getElementById('coverUrlError');
+      if(errorEl) errorEl.style.display='none';
+      suggestColorsFromImage(img);
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(blob);
+}
+async function pasteCoverFromClipboard(){
+  const errorEl = document.getElementById('coverUrlError');
+  try{
+    if(navigator.clipboard && navigator.clipboard.read){
+      const items = await navigator.clipboard.read();
+      for(const item of items){
+        const type = item.types.find(t=>t.startsWith('image/'));
+        if(type){
+          const blob = await item.getType(type);
+          applyCoverFromBlob(blob);
+          return;
+        }
+      }
+    }
+    if(errorEl){
+      errorEl.textContent = 'Não encontrei nenhuma imagem na área de transferência. Copie a imagem e tente de novo, ou use Ctrl+V nesta janela.';
+      errorEl.style.color = '#c0392b';
+      errorEl.style.display = 'block';
+    }
+  }catch(err){
+    if(errorEl){
+      errorEl.textContent = 'Não consegui acessar a área de transferência. Tente pressionar Ctrl+V nesta janela em vez de clicar no botão.';
+      errorEl.style.color = '#c0392b';
+      errorEl.style.display = 'block';
+    }
+  }
+}
+document.addEventListener('paste', (e)=>{
+  const overlay = document.getElementById('bookModalOverlay');
+  if(!overlay || !overlay.classList.contains('open')) return;
+  const items = (e.clipboardData || window.clipboardData) ? (e.clipboardData || window.clipboardData).items : null;
+  if(!items) return;
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){
+      const blob = item.getAsFile();
+      if(blob){
+        e.preventDefault();
+        applyCoverFromBlob(blob);
+      }
+      return;
+    }
+  }
+});
 function handleCoverUrl(){
   const input = document.getElementById('coverUrlInput');
   const errorEl = document.getElementById('coverUrlError');

@@ -1032,7 +1032,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="card" style="padding:20px;margin-bottom:16px;">
         <div class="section-title">🗜️ Armazenamento e capas</div>
         <div id="storageInfoText" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"></div>
-        <button class="btn btn-sage" onclick="optimizeCovers()">🗜️ Otimizar capas</button>
+        <button class="btn btn-sage" onclick="optimizeCovers()">📦 Mover capas para armazenamento maior</button>
       </div>
 
       <div class="card" style="padding:20px;margin-bottom:16px;">
@@ -1509,6 +1509,77 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 <script>
 /* ============ STORE ============ */
 const STORE_KEY = 'jardimLiterario_v1';
+
+/* ============ CAPAS NO INDEXEDDB (muito mais espaço que o localStorage) ============ */
+const COVER_DB_NAME = 'jardimLiterarioCovers';
+const COVER_STORE = 'covers';
+let coverDbInstance = null;
+let coverCache = {}; // bookId -> data URL, cache em memória pra leitura instantânea (síncrona)
+function openCoverDb(){
+  return new Promise((resolve, reject)=>{
+    if(!window.indexedDB){ reject(new Error('IndexedDB não suportado')); return; }
+    if(coverDbInstance){ resolve(coverDbInstance); return; }
+    const req = indexedDB.open(COVER_DB_NAME, 1);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(COVER_STORE)) db.createObjectStore(COVER_STORE);
+    };
+    req.onsuccess = (e)=>{ coverDbInstance = e.target.result; resolve(coverDbInstance); };
+    req.onerror = (e)=> reject(e.target.error);
+  });
+}
+async function loadAllCoversToCache(){
+  try{
+    const db = await openCoverDb();
+    await new Promise((resolve)=>{
+      const tx = db.transaction(COVER_STORE, 'readonly');
+      const req = tx.objectStore(COVER_STORE).openCursor();
+      req.onsuccess = (e)=>{
+        const cursor = e.target.result;
+        if(cursor){ coverCache[cursor.key] = cursor.value; cursor.continue(); }
+        else resolve();
+      };
+      req.onerror = ()=> resolve();
+    });
+  }catch(e){ console.warn('Não consegui abrir o armazenamento de capas (IndexedDB):', e); }
+}
+async function setCoverInDb(bookId, dataUrl){
+  coverCache[bookId] = dataUrl;
+  try{
+    const db = await openCoverDb();
+    await new Promise((resolve,reject)=>{
+      const tx = db.transaction(COVER_STORE, 'readwrite');
+      tx.objectStore(COVER_STORE).put(dataUrl, bookId);
+      tx.oncomplete = ()=> resolve(true);
+      tx.onerror = (e)=> reject(e.target.error);
+    });
+    return true;
+  }catch(e){ console.warn('Não consegui salvar a capa no armazenamento de capas:', e); return false; }
+}
+async function deleteCoverFromDb(bookId){
+  delete coverCache[bookId];
+  try{
+    const db = await openCoverDb();
+    const tx = db.transaction(COVER_STORE, 'readwrite');
+    tx.objectStore(COVER_STORE).delete(bookId);
+  }catch(e){}
+}
+async function migrateCoversToIndexedDB(){
+  if(!window.indexedDB) return;
+  let migrated = 0;
+  for(const b of DB.books){
+    if(b.cover && b.cover.startsWith('data:')){
+      await setCoverInDb(b.id, b.cover);
+      b.cover = 'idb';
+      migrated++;
+    }
+  }
+  if(migrated>0){
+    save();
+    renderAll();
+    console.log(`Jardim Literário: ${migrated} capa(s) movida(s) para um armazenamento com mais espaço.`);
+  }
+}
 function loadStore(){
   const raw = localStorage.getItem(STORE_KEY);
   if(raw) return JSON.parse(raw);
@@ -1552,6 +1623,7 @@ migrateData();
 function save(){
   try{
     localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+    return true;
   }catch(err){
     if(err && (err.name==='QuotaExceededError' || err.code===22 || err.code===1014)){
       alert('⚠️ O armazenamento do navegador ficou cheio (isso costuma acontecer com muitas capas de livros salvas). Sua última alteração NÃO foi salva.\n\nVá em "Mais" → "🗜️ Otimizar capas" pra liberar espaço, ou baixe um backup agora pra não perder nada.');
@@ -1559,6 +1631,7 @@ function save(){
       alert('Não consegui salvar essa alteração. Tente novamente — se persistir, baixe um backup pra garantir seus dados.');
     }
     console.error('Falha ao salvar:', err);
+    return false;
   }
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -1646,8 +1719,14 @@ function renderAll(){
 }
 
 /* ============ HELPERS ============ */
+function getCoverSrc(book){
+  if(!book || !book.cover) return null;
+  if(book.cover === 'idb') return coverCache[book.id] || null;
+  return book.cover;
+}
 function coverHtml(book, cls){
-  if(book.cover) return `<img class="${cls}" src="${book.cover}">`;
+  const src = getCoverSrc(book);
+  if(src) return `<img class="${cls}" src="${src}">`;
   return `<div class="${cls} cover-empty">📖</div>`;
 }
 function pct(book){
@@ -2444,6 +2523,9 @@ function paintRating(){
   document.querySelectorAll('#starRating span').forEach(s=> s.classList.toggle('on', Number(s.dataset.v)<=selectedRating));
 }
 let uploadedCover = null;
+let uploadedCoverIsFile = false;
+let originalBookCoverField = null;
+let coverChanged = false;
 function handleCoverUpload(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -2453,12 +2535,14 @@ function handleCoverUpload(e){
     const img = new Image();
     img.onload = ()=>{
       const canvas = document.createElement('canvas');
-      const maxW = 220;
+      const maxW = 420;
       const scale = Math.min(1, maxW/img.width);
       canvas.width = img.width*scale;
       canvas.height = img.height*scale;
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      uploadedCover = canvas.toDataURL('image/jpeg', 0.72);
+      uploadedCover = canvas.toDataURL('image/jpeg', 0.88);
+      uploadedCoverIsFile = true;
+      coverChanged = true;
       document.getElementById('coverPreview').src = uploadedCover;
       document.getElementById('coverPreview').textContent='';
       document.getElementById('coverUrlInput').value='';
@@ -2483,23 +2567,12 @@ function handleCoverUrl(){
     preview.textContent = '';
     document.getElementById('coverInput').value = '';
     document.getElementById('coverFileName').textContent='Nenhum arquivo escolhido';
-    // tenta converter a imagem do link para base64 (fica salva no JSON, sem depender do link no futuro)
+    uploadedCover = url; // sempre guarda o link como está — mantém a qualidade original e não ocupa espaço no navegador
+    uploadedCoverIsFile = false;
+    coverChanged = true;
     try{
-      const canvas = document.createElement('canvas');
-      const maxW = 220;
-      const scale = Math.min(1, maxW/img.width);
-      canvas.width = img.width*scale;
-      canvas.height = img.height*scale;
-      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      uploadedCover = canvas.toDataURL('image/jpeg', 0.72); // lança erro se a imagem for de outra origem sem CORS liberado
-      preview.src = uploadedCover;
       suggestColorsFromImage(img);
     }catch(err){
-      // não foi possível converter (CORS bloqueado pelo site de origem): mantém o link como está
-      uploadedCover = url;
-      errorEl.textContent = 'Não foi possível converter essa imagem para salvar permanentemente — o link foi usado como capa, mas pode parar de funcionar se sair do ar.';
-      errorEl.style.color = 'var(--ink-soft)';
-      errorEl.style.display = 'block';
       document.getElementById('suggestedColorsWrap').style.display='none';
     }
   };
@@ -2646,7 +2719,7 @@ function renderBookDetail(b){
   document.getElementById('bookDetailContent').innerHTML = `
     <div class="detail-grid">
       <div class="detail-left form-section">
-        ${b.cover ? `<img class="detail-cover-lg" src="${b.cover}">` : `<div class="detail-cover-lg detail-cover-empty" style="${b.color?`background:${b.color};`:''}">📖</div>`}
+        ${getCoverSrc(b) ? `<img class="detail-cover-lg" src="${getCoverSrc(b)}">` : `<div class="detail-cover-lg detail-cover-empty" style="${b.color?`background:${b.color};`:''}">📖</div>`}
         <div class="detail-title" style="margin-top:16px;">${esc(b.title)}</div>
         <div class="detail-author">${esc(b.author)}</div>
         <div class="detail-badges">${badges.join('')}</div>
@@ -2700,7 +2773,7 @@ function addQuickPageLog(bookId){
 let editingBookCameFromDetail = false;
 function openBookModal(id){
   editingBookCameFromDetail = !!id;
-  uploadedCover = null; selectedRating = 0;
+  uploadedCover = null; uploadedCoverIsFile = false; coverChanged = false; originalBookCoverField = null; selectedRating = 0;
   document.getElementById('bookId').value = id||'';
   document.getElementById('coverInput').value='';
   document.getElementById('coverUrlInput').value='';
@@ -2750,21 +2823,18 @@ function openBookModal(id){
       estEl.textContent = '';
     }
     if(b.cover){
-      preview.src = b.cover; preview.textContent=''; uploadedCover = b.cover;
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = ()=>{
-        try{
-          const canvas = document.createElement('canvas');
-          const maxW = 300;
-          const scale = Math.min(1, maxW/img.width);
-          canvas.width = img.width*scale;
-          canvas.height = img.height*scale;
-          canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-          suggestColorsFromImage(img);
-        }catch(err){ /* capa de outra origem sem CORS liberado: sem sugestões */ }
-      };
-      img.src = b.cover;
+      originalBookCoverField = b.cover;
+      const resolvedSrc = getCoverSrc(b);
+      if(resolvedSrc){
+        preview.src = resolvedSrc; preview.textContent=''; uploadedCover = resolvedSrc;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = ()=>{
+          try{ suggestColorsFromImage(img); }
+          catch(err){ /* capa de outra origem sem CORS liberado: sem sugestões */ }
+        };
+        img.src = resolvedSrc;
+      }
     }
     const rr = document.getElementById('rereadRow');
     const hist = b.completions||[];
@@ -2834,6 +2904,15 @@ function saveBook(){
     priority = Math.max(0, ...DB.books.map(x=>x.priority||0)) + 1;
   }
 
+  let finalCoverField;
+  if(!coverChanged){
+    finalCoverField = originalBookCoverField; // não mexeu na capa: mantém exatamente como estava (idb ou link)
+  } else if(uploadedCoverIsFile){
+    finalCoverField = 'idb'; // novo arquivo: a imagem em si vai pro IndexedDB logo abaixo
+  } else {
+    finalCoverField = uploadedCover; // novo link, ou null se removida
+  }
+
   const book = {
     id,
     title, author,
@@ -2857,12 +2936,15 @@ function saveBook(){
     lentDate: document.getElementById('bLentDate').value,
     price: document.getElementById('bPrice').value.trim(),
     store: document.getElementById('bStore').value.trim(),
-    cover: uploadedCover,
+    cover: finalCoverField,
     completions,
     dateAdded: existing ? existing.dateAdded : Date.now()
   };
   if(existing){ Object.assign(existing, book); }
   else { DB.books.push(book); }
+  if(coverChanged && uploadedCoverIsFile){
+    setCoverInDb(id, uploadedCover); // atualiza o cache na hora e grava no IndexedDB em segundo plano
+  }
   document.querySelectorAll('#bGoalsPicker [data-goal-id]').forEach(btn=>{
     const g = DB.goals.find(x=>x.id===btn.dataset.goalId);
     if(!g) return;
@@ -2899,15 +2981,18 @@ function deleteBook(){
   const idx = DB.books.findIndex(b=>b.id===id);
   if(idx===-1) return;
   const bookCopy = DB.books[idx];
+  const removedCoverData = bookCopy.cover==='idb' ? coverCache[id] : null;
   const removedLogs = DB.logs.filter(l=>l.bookId===id);
   DB.books = DB.books.filter(b=>b.id!==id);
   DB.logs = DB.logs.filter(l=>l.bookId!==id);
+  if(bookCopy.cover==='idb') deleteCoverFromDb(id);
   save();
   closeModal('bookModalOverlay');
   renderAll();
   showUndoToast(`"${bookCopy.title}" excluído.`, ()=>{
     DB.books.splice(idx,0,bookCopy);
     DB.logs.push(...removedLogs);
+    if(removedCoverData) setCoverInDb(id, removedCoverData);
     save();
     renderAll();
   });
@@ -4109,7 +4194,7 @@ function renderGoalsPage(){
     const pct = Math.min(100, Math.round((done/g.target)*100));
     const remaining = Math.max(0, g.target-done);
     const doneBooks = DB.books.filter(b=> (b.completions||[]).some(c=> matchesCriteria(c,b,g))).slice(0,5);
-    const coversHtml = doneBooks.map(b=> b.cover ? `<img class="goal-mini-cover" src="${b.cover}">` : `<div class="goal-mini-cover" style="display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--rosewood);">📖</div>`).join('');
+    const coversHtml = doneBooks.map(b=> getCoverSrc(b) ? `<img class="goal-mini-cover" src="${getCoverSrc(b)}">` : `<div class="goal-mini-cover" style="display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--rosewood);">📖</div>`).join('');
     return `<div class="card goal-card" style="cursor:pointer;" onclick="openGoalDetail('${g.id}')">
       <div class="goal-card-head">
         <span class="goal-card-icon">${g.icon||'⭐'}</span>
@@ -4321,9 +4406,13 @@ function importBackup(e){
       if(!Array.isArray(DB.logs)) DB.logs = [];
       migrateData();
       applyTheme(DB.settings.theme, true);
-      save();
+      const saved = save();
       renderAll();
-      alert('Backup importado com sucesso! 🌷');
+      if(saved){
+        alert('Backup importado com sucesso! 🌷');
+      } else {
+        alert('⚠️ O backup foi carregado na tela, mas NÃO foi salvo de verdade (armazenamento cheio). Os dados já estão aqui — vá agora em "Mais" → "🗜️ Otimizar capas" pra liberar espaço e salvar tudo. Não precisa importar de novo. Só não recarregue a página antes de otimizar, ou vai perder o que acabou de carregar.');
+      }
     }catch(err){
       alert('Não consegui ler esse arquivo (' + err.message + '). Confira se é um backup .json válido do Jardim Literário.');
     }
@@ -4340,8 +4429,13 @@ function renderStorageInfo(){
   if(!el) return;
   const sizeBytes = new Blob([JSON.stringify(DB)]).size;
   const sizeMB = (sizeBytes/1024/1024).toFixed(2);
-  const withCover = DB.books.filter(b=> b.cover && b.cover.startsWith('data:')).length;
-  el.textContent = `Seus dados ocupam aproximadamente ${sizeMB} MB (limite típico do navegador: 5 a 10 MB). ${withCover} livro(s) com capa salva.`;
+  const withCoverIdb = DB.books.filter(b=> b.cover==='idb').length;
+  const withCoverLegacy = DB.books.filter(b=> b.cover && b.cover.startsWith('data:')).length;
+  const withCoverLink = DB.books.filter(b=> b.cover && b.cover!=='idb' && !b.cover.startsWith('data:')).length;
+  let msg = `Seus dados principais ocupam ${sizeMB} MB (limite típico: 5 a 10 MB). `;
+  msg += `${withCoverIdb} capa(s) num armazenamento à parte com bem mais espaço, ${withCoverLink} por link.`;
+  if(withCoverLegacy>0) msg += ` ⚠️ ${withCoverLegacy} capa(s) ainda não migrada(s) — recarregue a página pra migrar automaticamente.`;
+  el.textContent = msg;
 }
 function resizeImageDataUrl(dataUrl, maxW, quality){
   return new Promise((resolve)=>{
@@ -4360,24 +4454,17 @@ function resizeImageDataUrl(dataUrl, maxW, quality){
   });
 }
 async function optimizeCovers(){
-  const targets = DB.books.filter(b=> b.cover && b.cover.startsWith('data:'));
-  if(targets.length===0){ alert('Nenhuma capa salva localmente pra otimizar. 🌷'); return; }
-  const before = new Blob([JSON.stringify(DB)]).size;
-  let processed = 0;
-  for(const b of targets){
-    const newCover = await resizeImageDataUrl(b.cover, 220, 0.72);
-    if(newCover.length < b.cover.length){ b.cover = newCover; processed++; }
+  const legacyTargets = DB.books.filter(b=> b.cover && b.cover.startsWith('data:'));
+  if(legacyTargets.length===0){
+    alert('Nenhuma capa pesada encontrada — tudo já está no armazenamento com mais espaço. 🌷');
+    return;
   }
+  const before = new Blob([JSON.stringify(DB)]).size;
+  await migrateCoversToIndexedDB();
   const after = new Blob([JSON.stringify(DB)]).size;
   const savedMB = ((before-after)/1024/1024).toFixed(2);
-  try{
-    localStorage.setItem(STORE_KEY, JSON.stringify(DB));
-    renderAll();
-    renderStorageInfo();
-    alert(`✅ ${processed} capa(s) otimizada(s)! Espaço liberado: ~${savedMB} MB.`);
-  }catch(err){
-    alert('As capas foram encolhidas, mas ainda não coube tudo no armazenamento do navegador. Considere remover a capa de alguns livros menos importantes, ou baixar um backup e continuar em outro dispositivo/navegador.');
-  }
+  renderStorageInfo();
+  alert(`✅ ${legacyTargets.length} capa(s) movida(s) pro armazenamento com mais espaço! O arquivo principal ficou ~${savedMB} MB menor, e as capas continuam na mesma qualidade.`);
 }
 function updateReminderBtnState(){
   const label = DB.settings.reminderEnabled ? '🔔 Lembrete ativado' : '🔔 Lembrete diário';
@@ -4478,6 +4565,11 @@ renderAll();
 updateReminderBtnState();
 checkDailyReminder();
 renderStorageInfo();
+(async ()=>{
+  await loadAllCoversToCache();
+  renderAll(); // agora com as capas do IndexedDB já disponíveis no cache
+  await migrateCoversToIndexedDB(); // move qualquer capa pesada que ainda esteja no localStorage
+})();
 </script>
 </body>
 </html>

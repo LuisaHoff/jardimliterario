@@ -1091,7 +1091,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
               <label class="file-upload-btn" for="coverInput">📁 Escolher arquivo</label>
               <input type="file" id="coverInput" accept="image/*" onchange="handleCoverUpload(event)" style="display:none;">
               <span class="file-upload-name" id="coverFileName">Nenhum arquivo escolhido</span>
-              <div style="font-size:11.5px;color:var(--ink-soft);margin-top:9px;">Envie a capa do livro (jpg/png), ou:</div>
+              <div style="font-size:11.5px;color:var(--ink-soft);margin-top:9px;">Envie a capa do livro (jpg/png), cole uma imagem copiada (Ctrl+V), ou:</div>
+              <div style="margin:6px 0;">
+                <button type="button" class="btn btn-ghost btn-sm" id="pasteImageBtn" onclick="tryPasteImageFromClipboard()">📋 Colar imagem (Ctrl+V)</button>
+              </div>
               <div class="cover-url-row">
                 <input type="text" id="coverUrlInput" placeholder="cole o link da imagem...">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="handleCoverUrl()">Usar link</button>
@@ -2583,10 +2586,29 @@ let uploadedCover = null;
 let uploadedCoverIsFile = false;
 let originalBookCoverField = null;
 let coverChanged = false;
-function handleCoverUpload(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  document.getElementById('coverFileName').textContent = file.name;
+async function tryPasteImageFromClipboard(){
+  if(!navigator.clipboard || !navigator.clipboard.read){
+    alert('Seu navegador não suporta colar direto por aqui — tente usar Ctrl+V (ou Cmd+V) em qualquer lugar da tela com o formulário aberto.');
+    return;
+  }
+  try{
+    const items = await navigator.clipboard.read();
+    for(const item of items){
+      const imageType = item.types.find(t=>t.startsWith('image/'));
+      if(imageType){
+        const blob = await item.getType(imageType);
+        processCoverFile(blob, 'Imagem colada');
+        return;
+      }
+    }
+    alert('Não encontrei nenhuma imagem copiada. Copie uma imagem (botão direito → Copiar imagem) e tente de novo.');
+  }catch(err){
+    alert('Não consegui acessar a área de transferência. Copie a imagem de novo e tente Ctrl+V direto na tela.');
+  }
+}
+function processCoverFile(file, sourceLabel){
+  if(!file || !file.type || !file.type.startsWith('image/')) return;
+  document.getElementById('coverFileName').textContent = sourceLabel || file.name || 'Imagem colada';
   const reader = new FileReader();
   reader.onload = evt=>{
     const img = new Image();
@@ -2608,6 +2630,11 @@ function handleCoverUpload(e){
     img.src = evt.target.result;
   };
   reader.readAsDataURL(file);
+}
+function handleCoverUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  processCoverFile(file);
 }
 function handleCoverUrl(){
   const input = document.getElementById('coverUrlInput');
@@ -4594,6 +4621,22 @@ function fmtDate(d){
 function openShortcutsModal(){
   document.getElementById('shortcutsModalOverlay').classList.add('open');
 }
+document.addEventListener('paste', function(e){
+  const modal = document.getElementById('bookModalOverlay');
+  if(!modal || !modal.classList.contains('open')) return;
+  const items = (e.clipboardData || window.clipboardData || {}).items;
+  if(!items) return;
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){
+      const file = item.getAsFile();
+      if(file){
+        e.preventDefault();
+        processCoverFile(file, 'Imagem colada');
+      }
+      break;
+    }
+  }
+});
 document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;

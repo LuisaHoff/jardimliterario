@@ -3933,9 +3933,36 @@ function statsPeriodMatches(dateStr){
   if(statsFilterMonth!=='all' && d.getMonth()!==Number(statsFilterMonth)) return false;
   return true;
 }
+function findYearReadingGoal(year){
+  // "reading goal for the year" = a goal pinned to that exact year with no genre/author/
+  // language scoping (those are challenges for a subset of books, not the year total).
+  return (DB.goals||[]).find(g=> Number(g.year)===year && !g.genre && !g.author && !g.language);
+}
+function goalBookEntry(book, year){
+  const compsInYear = (book.completions||[]).filter(c=> c.date && new Date(c.date+'T00:00:00').getFullYear()===year);
+  const best = compsInYear.length ? compsInYear[compsInYear.length-1] : null;
+  return { book, date: best ? best.date : (book.finishDate||null), rating: best ? best.rating : book.rating };
+}
 function getFilteredCompletions(){
   const out = [];
   const noFilter = statsFilterYear==='all' && statsFilterMonth==='all';
+
+  // when a single year is selected (no month drill-down) and there's a reading goal
+  // for that exact year, the stats must show the same books as that goal — use its
+  // bookIds as the source of truth instead of re-deriving from raw completions, so a
+  // reread doesn't get double-counted and a manually-toggled goal book always shows up.
+  if(statsFilterYear!=='all' && statsFilterMonth==='all'){
+    const yearNum = Number(statsFilterYear);
+    const yearGoal = findYearReadingGoal(yearNum);
+    if(yearGoal){
+      (yearGoal.bookIds||[]).forEach(id=>{
+        const b = DB.books.find(x=>x.id===id);
+        if(b) out.push(goalBookEntry(b, yearNum));
+      });
+      return out;
+    }
+  }
+
   DB.books.forEach(b=>{
     const comps = b.completions||[];
     if(comps.length){
@@ -3980,7 +4007,17 @@ function renderEstatisticas(){
   // month chart: 12-month breakdown of the selected year (or current year if "todos")
   const chartYear = statsFilterYear!=='all' ? Number(statsFilterYear) : new Date().getFullYear();
   const counts = new Array(12).fill(0);
-  DB.books.forEach(b=> (b.completions||[]).forEach(c=>{ const d=new Date(c.date+'T00:00:00'); if(d.getFullYear()===chartYear) counts[d.getMonth()]++; }));
+  const chartYearGoal = findYearReadingGoal(chartYear);
+  if(chartYearGoal){
+    (chartYearGoal.bookIds||[]).forEach(id=>{
+      const b = DB.books.find(x=>x.id===id);
+      if(!b) return;
+      const entry = goalBookEntry(b, chartYear);
+      if(entry.date){ const d = new Date(entry.date+'T00:00:00'); if(!isNaN(d)) counts[d.getMonth()]++; }
+    });
+  } else {
+    DB.books.forEach(b=> (b.completions||[]).forEach(c=>{ const d=new Date(c.date+'T00:00:00'); if(d.getFullYear()===chartYear) counts[d.getMonth()]++; }));
+  }
   const max = Math.max(1, ...counts);
   document.getElementById('monthChart').innerHTML = counts.map((c,i)=>`
     <div class="bar-col" data-tooltip="${c} livro(s)">${c>0?`<span class="bar-value">${c}</span>`:''}<div class="bar" style="height:${(c/max)*100}%"></div><div class="bar-lbl">${MONTHS_PT[i]}</div></div>

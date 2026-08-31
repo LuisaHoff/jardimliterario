@@ -3006,6 +3006,12 @@ function saveBook(){
     const last = completions[completions.length-1];
     if(!last || last.date !== finishDate){ completions.push({date:finishDate, rating:selectedRating}); }
     else { last.rating = selectedRating; }
+  } else if(existing && existing.status==='lido' && existing.finishDate){
+    // status just moved away from "lido" — the completion tied to the old finishDate was
+    // created by that "lido" state and no longer reflects reality, so drop just that one
+    // entry (any earlier, genuinely separate completions/rereads are left untouched).
+    const idx = completions.findIndex(c=> c.date===existing.finishDate);
+    if(idx!==-1) completions.splice(idx,1);
   }
 
   let priority = existing ? existing.priority : null;
@@ -3380,7 +3386,7 @@ function renderMonthReadGrid(){
   if(!el) return;
   const monthStart = new Date(calYear, calMonth, 1);
   const monthEnd = new Date(calYear, calMonth+1, 0, 23, 59, 59);
-  const books = DB.books.filter(b=> (b.completions||[]).some(c=>{
+  const books = DB.books.filter(b=> b.status==='lido' && (b.completions||[]).some(c=>{
     const d = new Date(c.date+'T00:00:00');
     return d>=monthStart && d<=monthEnd;
   }));
@@ -3502,7 +3508,7 @@ function renderMonthRecap(){
   const monthLogs = DB.logs.filter(l=>{ const d=new Date(l.date+'T00:00:00'); return d.getFullYear()===calYear && d.getMonth()===calMonth; });
   const pages = monthLogs.reduce((s,l)=>s+(Number(l.pagesRead)||0),0);
   const daysWithLog = new Set(monthLogs.map(l=>l.date)).size;
-  const finished = DB.books.flatMap(b=>b.completions||[]).filter(c=>{ const d=new Date(c.date+'T00:00:00'); return d.getFullYear()===calYear && d.getMonth()===calMonth; }).length;
+  const finished = DB.books.filter(b=> b.status==='lido' && (b.completions||[]).some(c=>{ const d=new Date(c.date+'T00:00:00'); return d.getFullYear()===calYear && d.getMonth()===calMonth; })).length;
   el.innerHTML = `
     <div class="mr-item"><b>${finished}</b>livro${finished===1?'':'s'} concluído${finished===1?'':'s'}</div>
     <div class="mr-item"><b>${pages}</b>página${pages===1?'':'s'} lida${pages===1?'':'s'}</div>

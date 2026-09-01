@@ -788,14 +788,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <div><h1>TBR</h1><p>Os livros que você quer ler, separados por mês.</p></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-sage" onclick="suggestNextRead()">🎲 Sortear próxima leitura</button>
-          <button class="btn btn-ghost" onclick="openPlanModal()">🗓️ Planejar leitura</button>
-          <button class="btn btn-ghost" onclick="openMonthlyTbrModal()">📅 Nova TBR do mês</button>
           <button class="btn btn-ghost" onclick="shareWishlist()">📥 Baixar lista</button>
           <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo livro</button>
         </div>
       </div>
       <div class="vine-divider"></div>
       <div class="tbr-tabs" id="tbrTabsRow"></div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">🗓️ O mês/ano de cada livro é definido no cadastro dele — edite o livro (ícone 🗓️ ou abrindo os detalhes) pra mudar quando ele entra aqui.</div>
       <input type="text" id="tbrSearchBox" placeholder="🔎 Buscar nesta lista..." oninput="renderTbrTabContent()" style="width:100%;margin-bottom:16px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;">
       <div class="queue-list" id="tbrTabContent"></div>
     </div>
@@ -1181,6 +1180,17 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         </div>
 
         <div class="form-section form-section-featured">
+          <div class="form-section-title">🗓️ Planejamento de leitura <span style="font-weight:500;color:var(--ink-soft);font-size:11.5px;">(opcional)</span></div>
+          <div class="field"><label>Início planejado</label><input type="date" id="bPlanStart"></div>
+          <div class="field"><label>Fim planejado</label><input type="date" id="bPlanEnd"></div>
+          <div class="field"><label>Mês que quero ler</label>
+            <select id="bPlanMonth"><option value="">Nenhum</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>Ano que quero ler</label><input type="number" id="bPlanYear" placeholder="ex: 2026"></div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:8px;">Definir um mês aqui coloca o livro na aba daquele mês na sua TBR ✨ Você pode voltar aqui e mudar isso quando quiser.</div>
+        </div>
+
+        <div class="form-section form-section-featured">
           <div class="form-section-title">🎯 Metas &amp; desafios</div>
           <div class="field"><label>Metas que este livro ajuda a completar</label><div class="chip-picker" id="bGoalsPicker"></div></div>
           <div class="field" style="margin-bottom:0;"><label>Desafios que este livro faz parte</label><div class="chip-picker" id="bChallengesPicker"></div></div>
@@ -1378,45 +1388,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div style="display:flex;justify-content:space-between;align-items:center;"><span class="kbd">Esc</span><span style="font-size:13px;color:var(--ink-soft);">Fechar janela aberta</span></div>
     </div>
     <div style="font-size:11px;color:var(--ink-soft);margin-top:14px;">Não funcionam enquanto você está digitando em um campo.</div>
-  </div>
-</div>
-
-<!-- ===== MODAL: PLANEJAMENTO ===== -->
-<div class="overlay" id="planModalOverlay">
-  <div class="modal" style="max-width:460px;">
-    <button class="modal-close" onclick="closeModal('planModalOverlay')">✕</button>
-    <h2>🗓️ Planejar leitura</h2>
-    <div class="field"><label>Livro</label><select id="planBook"></select></div>
-    <div class="grid2">
-      <div class="field"><label>Início planejado</label><input type="date" id="planStart"></div>
-      <div class="field"><label>Fim planejado</label><input type="date" id="planEnd"></div>
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:18px;" onclick="addReadingPlan()">+ Adicionar ao planejamento</button>
-    <div class="detail-section-label">Planejados</div>
-    <div id="planList"></div>
-  </div>
-</div>
-
-<!-- ===== MODAL: TBR DO MÊS ===== -->
-<div class="overlay" id="monthlyTbrModalOverlay">
-  <div class="modal" style="max-width:560px;">
-    <button class="modal-close" onclick="closeModal('monthlyTbrModalOverlay')">✕</button>
-    <h2 id="monthlyTbrModalTitle">📅 TBR do mês</h2>
-    <input type="hidden" id="monthlyTbrId">
-    <div class="grid2">
-      <div class="field"><label>Mês</label><select id="monthlyTbrMonth"></select></div>
-      <div class="field"><label>Ano</label><input type="number" id="monthlyTbrYear"></div>
-    </div>
-    <div class="field" style="margin-bottom:8px;">
-      <label>Livros deste TBR</label>
-      <input type="text" id="monthlyTbrSearch" placeholder="🔎 Buscar livro..." oninput="renderMonthlyTbrPicker()">
-    </div>
-    <div class="monthly-tbr-picker" id="monthlyTbrPicker"></div>
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="deleteMonthlyTbrBtn" style="display:none;" onclick="deleteMonthlyTbr()">Excluir</button>
-      <button class="btn btn-ghost" onclick="closeModal('monthlyTbrModalOverlay')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveMonthlyTbr()">Salvar TBR</button>
-    </div>
   </div>
 </div>
 
@@ -1626,7 +1597,23 @@ function migrateData(){
     if(typeof b.price !== 'string') b.price = '';
     if(typeof b.store !== 'string') b.store = '';
     if(typeof b.language !== 'string') b.language = '';
+    if(typeof b.planStart !== 'string') b.planStart = '';
+    if(typeof b.planEnd !== 'string') b.planEnd = '';
+    if(b.planMonth===undefined) b.planMonth = null;
+    if(b.planYear===undefined) b.planYear = null;
     if(b.status==='quero-ler' && !b.priority){ b.priority = nextPriority++; }
+  });
+  // planejamento migrou pra dentro do cadastro do livro (planStart/planEnd/planMonth/planYear) —
+  // traz o que existia nos sistemas antigos (DB.plans e DB.monthlyTbrs) pra lá, sem duplicar.
+  (DB.plans||[]).forEach(p=>{
+    const b = DB.books.find(x=>x.id===p.bookId);
+    if(b && !b.planStart && !b.planEnd){ b.planStart = p.startDate||''; b.planEnd = p.endDate||''; }
+  });
+  (DB.monthlyTbrs||[]).forEach(t=>{
+    (t.bookIds||[]).forEach(id=>{
+      const b = DB.books.find(x=>x.id===id);
+      if(b && b.planMonth===null && b.planYear===null){ b.planMonth = t.month; b.planYear = t.year; }
+    });
   });
 }
 migrateData();
@@ -1809,74 +1796,28 @@ function renderPausedReminder(){
 }
 
 /* ============ PLANEJAMENTO DE LEITURAS ============ */
-function openPlanModal(){
-  const sel = document.getElementById('planBook');
-  const books = DB.books.filter(b=>b.status==='quero-ler'||b.status==='lendo').sort((a,b)=>a.title.localeCompare(b.title));
-  sel.innerHTML = books.length ? books.map(b=>`<option value="${b.id}">${esc(b.title)}</option>`).join('') : '<option value="">Nenhum livro em Quero Ler/Lendo</option>';
-  document.getElementById('planStart').value = new Date().toISOString().slice(0,10);
-  document.getElementById('planEnd').value = '';
-  renderPlanList();
-  document.getElementById('planModalOverlay').classList.add('open');
-}
-function addReadingPlan(){
-  const bookId = document.getElementById('planBook').value;
-  const start = document.getElementById('planStart').value;
-  const end = document.getElementById('planEnd').value || start;
-  if(!bookId || !start){ alert('Escolha um livro e uma data de início 🌱'); return; }
-  DB.plans.push({ id:uid(), bookId, startDate:start, endDate: end<start?start:end });
-  save();
-  renderPlanList();
-  renderPlansSection();
-  renderCurrentCalView();
-}
-function deleteReadingPlan(id){
-  DB.plans = DB.plans.filter(p=>p.id!==id);
-  save();
-  renderPlanList();
-  renderPlansSection();
-  renderCurrentCalView();
-}
-function renderPlanList(){
-  const el = document.getElementById('planList');
-  if(!el) return;
-  const plans = [...DB.plans].sort((a,b)=> new Date(a.startDate)-new Date(b.startDate));
-  if(plans.length===0){ el.innerHTML = `<div class="empty-state" style="padding:16px;font-size:12.5px;">Nenhuma leitura planejada ainda.</div>`; return; }
-  el.innerHTML = plans.map(p=>{
-    const b = DB.books.find(x=>x.id===p.bookId);
-    let statusTag = '';
-    if(b){
-      if(b.status==='lido') statusTag = ' · ✅ lido';
-      else if(b.status==='lendo') statusTag = ' · 📖 já começou';
-    }
-    return `<div class="dbl-item">
-      ${b?coverHtml(b,'cover'):'<div class="cover cover-empty">📖</div>'}
-      <div style="flex:1;"><div class="dbl-title">${b?esc(b.title):'(livro removido)'}</div><div class="dbl-sub">${fmtDate(p.startDate)} – ${fmtDate(p.endDate)}${statusTag}</div></div>
-      <button class="btn btn-danger btn-sm" onclick="deleteReadingPlan('${p.id}')">✕</button>
-    </div>`;
-  }).join('');
-}
+/* agora vive direto no cadastro do livro (planStart/planEnd/planMonth/planYear) */
 function renderPlansSection(){
   const wrap = document.getElementById('plansSectionWrap');
   if(!wrap) return;
   const today = new Date().toISOString().slice(0,10);
-  const active = DB.plans.filter(p=>{
-    if(p.endDate<today) return false;
-    const b = DB.books.find(x=>x.id===p.bookId);
-    if(b && b.status==='lido') return false; // já terminou de ler — não precisa mais lembrar
-    return true;
-  }).sort((a,b)=> new Date(a.startDate)-new Date(b.startDate));
+  const active = DB.books.filter(b=>{
+    if(b.status!=='quero-ler' || !b.planStart) return false;
+    const end = b.planEnd || b.planStart;
+    return end>=today;
+  }).sort((a,b)=> new Date(a.planStart)-new Date(b.planStart));
   if(active.length===0){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  document.getElementById('plansList').innerHTML = active.map(p=>{
-    const b = DB.books.find(x=>x.id===p.bookId);
-    const isNow = p.startDate<=today && p.endDate>=today;
-    const statusTag = b && b.status==='lendo' ? '📖 lendo agora · ' : (isNow ? '📖 hoje é dia de ler · ' : '');
+  document.getElementById('plansList').innerHTML = active.map(b=>{
+    const end = b.planEnd || b.planStart;
+    const isNow = b.planStart<=today && end>=today;
+    const statusTag = isNow ? '📖 hoje é dia de ler · ' : '';
     return `<div class="dbl-item">
-      <div style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;cursor:pointer;" ${b?`onclick="openBookDetail('${b.id}')"`:''}>
-        ${b?coverHtml(b,'cover'):'<div class="cover cover-empty">📖</div>'}
-        <div><div class="dbl-title">${b?esc(b.title):'(livro removido)'}</div><div class="dbl-sub">${statusTag}${fmtDate(p.startDate)} – ${fmtDate(p.endDate)}</div></div>
+      <div style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
+        ${coverHtml(b,'cover')}
+        <div><div class="dbl-title">${esc(b.title)}</div><div class="dbl-sub">${statusTag}${fmtDate(b.planStart)} – ${fmtDate(end)}</div></div>
       </div>
-      <button class="btn btn-ghost btn-sm" style="padding:6px 10px;flex-shrink:0;" title="Remover do planejamento" onclick="event.stopPropagation(); deleteReadingPlan('${p.id}')">✕</button>
+      <button class="btn btn-ghost btn-sm" style="padding:6px 10px;flex-shrink:0;" title="Editar planejamento" onclick="event.stopPropagation(); openBookModal('${b.id}')">🗓️</button>
     </div>`;
   }).join('');
 }
@@ -2110,6 +2051,7 @@ function renderEstante(){
     if(ge && b.genre!==ge) return false;
     if(yr && !(b.completions||[]).some(c=> c.date && new Date(c.date).getFullYear()===Number(yr))) return false;
     if(mo && !(b.completions||[]).some(c=> c.date && new Date(c.date).getMonth()===Number(mo) && (!yr || new Date(c.date).getFullYear()===Number(yr)))) return false;
+    if((yr||mo) && b.status!=='lido') return false;
     if(estanteFavOnly && !b.favorite) return false;
     if(estanteLentOnly && !b.lentTo) return false;
     return true;
@@ -2223,10 +2165,24 @@ function renderWishlistPage(){
   `).join('')}</div>`;
 }
 let selectedTbrTab = 'none';
-function getBooksInAnyMonthlyTbr(){
-  const ids = new Set();
-  (DB.monthlyTbrs||[]).forEach(t=> t.bookIds.forEach(id=>ids.add(id)));
-  return ids;
+function tbrTabKey(year, month){ return year+'-'+month; }
+function getTbrMonthGroups(){
+  const map = new Map();
+  DB.books.forEach(b=>{
+    if(b.status==='quero-ler' && b.planMonth!==null && b.planMonth!==undefined && b.planYear){
+      const key = tbrTabKey(b.planYear, b.planMonth);
+      if(!map.has(key)) map.set(key, { year:b.planYear, month:b.planMonth, bookIds:[] });
+      map.get(key).bookIds.push(b.id);
+    }
+  });
+  return [...map.values()].sort((a,b)=> (a.year-b.year) || (a.month-b.month));
+}
+function getCurrentTbrBooks(){
+  if(selectedTbrTab==='none'){
+    return DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
+  }
+  const [year, month] = selectedTbrTab.split('-').map(Number);
+  return DB.books.filter(b=>b.status==='quero-ler' && b.planMonth===month && b.planYear===year).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
 }
 function renderTbrPage(){
   renderTbrTabs();
@@ -2242,15 +2198,14 @@ function selectTbrTab(id){
 function renderTbrTabs(){
   const el = document.getElementById('tbrTabsRow');
   if(!el) return;
-  const assignedIds = getBooksInAnyMonthlyTbr();
-  const noneCount = DB.books.filter(b=>b.status==='quero-ler' && !assignedIds.has(b.id)).length;
-  const months = [...(DB.monthlyTbrs||[])].sort((a,b)=> (a.year-b.year) || (a.month-b.month));
-  // se a aba selecionada foi excluída nesse meio tempo, volta pra "Sem mês"
-  if(selectedTbrTab!=='none' && !months.some(t=>t.id===selectedTbrTab)) selectedTbrTab='none';
+  const groups = getTbrMonthGroups();
+  const noneCount = DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).length;
+  // se o mês selecionado ficou vazio nesse meio tempo, volta pra "Sem mês"
+  if(selectedTbrTab!=='none' && !groups.some(g=>tbrTabKey(g.year,g.month)===selectedTbrTab)) selectedTbrTab='none';
   let html = `<button class="tbr-tab ${selectedTbrTab==='none'?'active':''}" onclick="selectTbrTab('none')">🗂️ Sem mês <span class="tbr-tab-count">${noneCount}</span></button>`;
-  html += months.map(t=>{
-    const count = t.bookIds.length;
-    return `<button class="tbr-tab ${selectedTbrTab===t.id?'active':''}" onclick="selectTbrTab('${t.id}')">📅 ${MONTHS_PT[t.month]} ${t.year} <span class="tbr-tab-count">${count}</span></button>`;
+  html += groups.map(g=>{
+    const key = tbrTabKey(g.year,g.month);
+    return `<button class="tbr-tab ${selectedTbrTab===key?'active':''}" onclick="selectTbrTab('${key}')">📅 ${MONTHS_PT[g.month]} ${g.year} <span class="tbr-tab-count">${g.bookIds.length}</span></button>`;
   }).join('');
   el.innerHTML = html;
 }
@@ -2258,62 +2213,36 @@ function renderTbrTabContent(){
   const el = document.getElementById('tbrTabContent');
   if(!el) return;
   const q = (document.getElementById('tbrSearchBox')?.value||'').toLowerCase().trim();
-  if(selectedTbrTab==='none'){
-    const assignedIds = getBooksInAnyMonthlyTbr();
-    let books = DB.books.filter(b=>b.status==='quero-ler' && !assignedIds.has(b.id)).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
-    if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-    if(books.length===0){
-      el.innerHTML = q
-        ? `<div class="card empty-state"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
-        : `<div class="card empty-state"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`;
-      return;
-    }
-    el.innerHTML = books.map((b,i)=>`
-      <div class="queue-item" draggable="true" data-id="${b.id}"
-        ondragstart="queueDragStart(event,'${b.id}')" ondragover="event.preventDefault()" ondrop="queueDrop(event,'${b.id}')">
-        <span class="queue-handle">⠿</span>
-        <span class="queue-num">${i+1}</span>
-        ${coverHtml(b,'cover')}
-        <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
-          <div class="dbl-title">${esc(b.title)}${b.favorite?' ❤️':''}</div>
-          <div class="dbl-sub">${esc(b.author)}${b.price?' · '+esc(b.price):''}${b.store?' · '+esc(b.store):''}</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" title="Colocar num mês" onclick="event.stopPropagation(); openMonthlyTbrModal(null,'${b.id}')">📅</button>
-      </div>
-    `).join('');
-  } else {
-    const t = (DB.monthlyTbrs||[]).find(x=>x.id===selectedTbrTab);
-    if(!t){ el.innerHTML=''; return; }
-    let books = t.bookIds.map(id=>DB.books.find(b=>b.id===id)).filter(Boolean);
-    if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-    if(books.length===0){
-      el.innerHTML = q
-        ? `<div class="card empty-state"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
-        : `<div class="card empty-state"><div class="big">📅</div>Nenhum livro nessa TBR ainda.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openMonthlyTbrModal('${t.id}')">Adicionar livros</button></div>`;
-      return;
-    }
-    el.innerHTML = `<div style="text-align:right;margin-bottom:10px;"><button class="btn btn-ghost btn-sm" onclick="openMonthlyTbrModal('${t.id}')">✎ Editar esta TBR</button></div>` +
-      books.map((b,i)=>`
-      <div class="queue-item" draggable="true" data-id="${b.id}"
-        ondragstart="mtbrDragStart(event,'${b.id}')" ondragover="event.preventDefault()" ondrop="mtbrDrop(event,'${b.id}')">
-        <span class="queue-handle">⠿</span>
-        <span class="queue-num">${i+1}</span>
-        ${coverHtml(b,'cover')}
-        <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
-          <div class="dbl-title">${esc(b.title)}${b.favorite?' ❤️':''} ${b.status==='lido'?'✅':''}</div>
-          <div class="dbl-sub">${esc(b.author)}${b.price?' · '+esc(b.price):''}${b.store?' · '+esc(b.store):''}</div>
-        </div>
-      </div>
-    `).join('');
+  let books = getCurrentTbrBooks();
+  if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+  if(books.length===0){
+    el.innerHTML = q
+      ? `<div class="card empty-state"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
+      : (selectedTbrTab==='none'
+        ? `<div class="card empty-state"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
+        : `<div class="card empty-state"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`);
+    return;
   }
+  el.innerHTML = books.map((b,i)=>`
+    <div class="queue-item" draggable="true" data-id="${b.id}"
+      ondragstart="queueDragStart(event,'${b.id}')" ondragover="event.preventDefault()" ondrop="queueDrop(event,'${b.id}')">
+      <span class="queue-handle">⠿</span>
+      <span class="queue-num">${i+1}</span>
+      ${coverHtml(b,'cover')}
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
+        <div class="dbl-title">${esc(b.title)}${b.favorite?' ❤️':''}</div>
+        <div class="dbl-sub">${esc(b.author)}${b.price?' · '+esc(b.price):''}${b.store?' · '+esc(b.store):''}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" title="Editar planejamento" onclick="event.stopPropagation(); openBookModal('${b.id}')">🗓️</button>
+    </div>
+  `).join('');
 }
 let dragQueueId = null;
 function queueDragStart(e,id){ dragQueueId=id; e.dataTransfer.effectAllowed='move'; }
 function queueDrop(e,targetId){
   e.preventDefault();
   if(!dragQueueId || dragQueueId===targetId) return;
-  const assignedIds = getBooksInAnyMonthlyTbr();
-  const books = DB.books.filter(b=>b.status==='quero-ler' && !assignedIds.has(b.id)).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
+  const books = getCurrentTbrBooks();
   const order = books.map(b=>b.id);
   const fromIdx = order.indexOf(dragQueueId);
   const toIdx = order.indexOf(targetId);
@@ -2323,93 +2252,6 @@ function queueDrop(e,targetId){
   order.forEach((id,i)=>{ const b=DB.books.find(x=>x.id===id); if(b) b.priority=i+1; });
   save();
   renderTbrTabContent();
-}
-let dragMtbrId = null;
-function mtbrDragStart(e,id){ dragMtbrId=id; e.dataTransfer.effectAllowed='move'; }
-function mtbrDrop(e,targetId){
-  e.preventDefault();
-  if(!dragMtbrId || dragMtbrId===targetId) return;
-  const t = (DB.monthlyTbrs||[]).find(x=>x.id===selectedTbrTab);
-  if(!t) return;
-  const order = [...t.bookIds];
-  const fromIdx = order.indexOf(dragMtbrId);
-  const toIdx = order.indexOf(targetId);
-  if(fromIdx===-1||toIdx===-1) return;
-  order.splice(fromIdx,1);
-  order.splice(toIdx,0,dragMtbrId);
-  t.bookIds = order;
-  save();
-  renderTbrTabContent();
-}
-
-/* ============ TBR DO MÊS ============ */
-let monthlyTbrSelectedIds = new Set();
-function openMonthlyTbrModal(id, preselectBookId){
-  document.getElementById('monthlyTbrId').value = id||'';
-  const sel = document.getElementById('monthlyTbrMonth');
-  if(!sel.options.length) sel.innerHTML = MONTHS_FULL_PT.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
-  document.getElementById('monthlyTbrSearch').value = '';
-  const now = new Date();
-  if(id){
-    const t = DB.monthlyTbrs.find(x=>x.id===id);
-    if(!t) return;
-    document.getElementById('monthlyTbrModalTitle').textContent = '📅 Editar TBR do mês';
-    sel.value = t.month;
-    document.getElementById('monthlyTbrYear').value = t.year;
-    monthlyTbrSelectedIds = new Set(t.bookIds);
-    document.getElementById('deleteMonthlyTbrBtn').style.display = 'inline-flex';
-  } else {
-    document.getElementById('monthlyTbrModalTitle').textContent = '📅 Nova TBR do mês';
-    sel.value = now.getMonth();
-    document.getElementById('monthlyTbrYear').value = now.getFullYear();
-    monthlyTbrSelectedIds = preselectBookId ? new Set([preselectBookId]) : new Set();
-    document.getElementById('deleteMonthlyTbrBtn').style.display = 'none';
-  }
-  renderMonthlyTbrPicker();
-  document.getElementById('monthlyTbrModalOverlay').classList.add('open');
-}
-function renderMonthlyTbrPicker(){
-  const q = (document.getElementById('monthlyTbrSearch').value||'').toLowerCase().trim();
-  let books = DB.books.filter(b=> b.status==='quero-ler' || monthlyTbrSelectedIds.has(b.id));
-  books.sort((a,b)=>a.title.localeCompare(b.title));
-  if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-  const el = document.getElementById('monthlyTbrPicker');
-  if(books.length===0){ el.innerHTML = `<div class="empty-state" style="padding:14px;font-size:12.5px;">${q?'Nenhum livro encontrado.':'Nenhum livro na sua TBR (✨) ainda pra escolher. Adicione livros lá primeiro.'}</div>`; return; }
-  el.innerHTML = books.map(b=>`
-    <label class="mtbr-check-item">
-      <input type="checkbox" onchange="toggleMonthlyTbrBook('${b.id}', this.checked)" ${monthlyTbrSelectedIds.has(b.id)?'checked':''}>
-      <span style="flex:1;min-width:0;">${esc(b.title)} <span style="color:var(--ink-soft);font-size:11.5px;">— ${esc(b.author)}</span></span>
-      ${b.status==='lido'?'<span title="Já lido">✅</span>':''}
-    </label>
-  `).join('');
-}
-function toggleMonthlyTbrBook(id, checked){
-  if(checked) monthlyTbrSelectedIds.add(id); else monthlyTbrSelectedIds.delete(id);
-}
-function saveMonthlyTbr(){
-  const id = document.getElementById('monthlyTbrId').value;
-  const month = Number(document.getElementById('monthlyTbrMonth').value);
-  const year = Number(document.getElementById('monthlyTbrYear').value) || new Date().getFullYear();
-  const bookIds = [...monthlyTbrSelectedIds];
-  if(bookIds.length===0){ alert('Escolha pelo menos um livro pra essa TBR. 🌱'); return; }
-  if(id){
-    const t = DB.monthlyTbrs.find(x=>x.id===id);
-    if(t){ t.month=month; t.year=year; t.bookIds=bookIds; }
-  } else {
-    DB.monthlyTbrs.push({ id:uid(), month, year, bookIds });
-  }
-  save();
-  closeModal('monthlyTbrModalOverlay');
-  renderTbrPage();
-}
-function deleteMonthlyTbr(){
-  const id = document.getElementById('monthlyTbrId').value;
-  if(!id) return;
-  if(!confirm('Excluir esta TBR do mês?')) return;
-  DB.monthlyTbrs = DB.monthlyTbrs.filter(x=>x.id!==id);
-  save();
-  closeModal('monthlyTbrModalOverlay');
-  renderTbrPage();
 }
 
 /* ============ SUGESTÃO DE PRÓXIMA LEITURA ============ */
@@ -2892,6 +2734,8 @@ function openBookModal(id){
   const preview = document.getElementById('coverPreview');
   preview.removeAttribute('src'); preview.textContent='📖';
   document.getElementById('deleteBookBtn').style.display = id ? 'inline-flex':'none';
+  const planMonthSel = document.getElementById('bPlanMonth');
+  if(planMonthSel.options.length<=1) planMonthSel.innerHTML += MONTHS_FULL_PT.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
 
   if(id){
     const b = DB.books.find(x=>x.id===id);
@@ -2916,6 +2760,10 @@ function openBookModal(id){
     document.getElementById('bLentDate').value = b.lentDate||'';
     document.getElementById('bPrice').value = b.price||'';
     document.getElementById('bStore').value = b.store||'';
+    document.getElementById('bPlanStart').value = b.planStart||'';
+    document.getElementById('bPlanEnd').value = b.planEnd||'';
+    document.getElementById('bPlanMonth').value = (b.planMonth===null||b.planMonth===undefined) ? '' : b.planMonth;
+    document.getElementById('bPlanYear').value = b.planYear||'';
     document.getElementById('lentReturnRow').style.display = b.lentTo ? 'block' : 'none';
     selectedRating = b.rating||0;
     selectedFavorite = !!b.favorite;
@@ -2955,7 +2803,8 @@ function openBookModal(id){
     }
   } else {
     document.getElementById('bookModalTitle').textContent = 'Novo livro';
-    ['bTitle','bAuthor','bSaga','bSagaOrder','bGenre','bTotalPages','bCurrentPage','bStartDate','bFinishDate','bSynopsis','bThoughts','bQuote','bTags','bLentTo','bLentDate','bPrice','bStore'].forEach(f=> document.getElementById(f).value='');
+    ['bTitle','bAuthor','bSaga','bSagaOrder','bGenre','bTotalPages','bCurrentPage','bStartDate','bFinishDate','bSynopsis','bThoughts','bQuote','bTags','bLentTo','bLentDate','bPrice','bStore','bPlanStart','bPlanEnd','bPlanYear'].forEach(f=> document.getElementById(f).value='');
+    document.getElementById('bPlanMonth').value = '';
     document.getElementById('bFormat').value='Físico';
     document.getElementById('bStatus').value='quero-ler';
     document.getElementById('rereadRow').style.display='none';
@@ -3051,6 +2900,10 @@ function saveBook(){
     lentDate: document.getElementById('bLentDate').value,
     price: document.getElementById('bPrice').value.trim(),
     store: document.getElementById('bStore').value.trim(),
+    planStart: document.getElementById('bPlanStart').value,
+    planEnd: document.getElementById('bPlanEnd').value,
+    planMonth: document.getElementById('bPlanMonth').value===''? null : Number(document.getElementById('bPlanMonth').value),
+    planYear: Number(document.getElementById('bPlanYear').value)||null,
     cover: finalCoverField,
     completions,
     dateAdded: existing ? existing.dateAdded : Date.now()
@@ -3307,9 +3160,10 @@ function renderCalendar(){
   });
   const max = Math.max(1, ...Object.values(byDay).map(d=>d.total));
   const plannedDays = new Set();
-  DB.plans.forEach(p=>{
-    let d = new Date(p.startDate+'T00:00:00');
-    const end = new Date(p.endDate+'T00:00:00');
+  DB.books.forEach(b=>{
+    if(b.status!=='quero-ler' || !b.planStart) return;
+    let d = new Date(b.planStart+'T00:00:00');
+    const end = new Date((b.planEnd||b.planStart)+'T00:00:00');
     let guard = 0;
     while(d<=end && guard<400){
       if(d.getFullYear()===calYear && d.getMonth()===calMonth) plannedDays.add(d.getDate());
@@ -3429,15 +3283,15 @@ function getReadingPeriodsForMonth(year, month){
       periods.push({ bookId:b.id, title:b.title, start, end, color:b.color, status:STATUS_LABEL[b.status]||'', kind:'read' });
     }
   });
-  DB.plans.forEach(p=>{
-    const b = DB.books.find(x=>x.id===p.bookId);
-    const start = new Date(p.startDate+'T00:00:00');
-    const end = new Date(p.endDate+'T00:00:00');
-    if(start<=monthEnd && end>=monthStart){
-      periods.push({ bookId:p.bookId, title:b?b.title:'(livro removido)', start, end, color:b?b.color:null, status:'Planejado', kind:'plan' });
+  DB.books.forEach(b=>{
+    if(b.status==='quero-ler' && b.planStart && b.planEnd){
+      const start = new Date(b.planStart+'T00:00:00');
+      const end = new Date(b.planEnd+'T00:00:00');
+      if(start<=monthEnd && end>=monthStart){
+        periods.push({ bookId:b.id, title:b.title, start, end, color:b.color, status:'Planejado', kind:'plan' });
+      }
     }
-  });
-  return periods;
+  });  return periods;
 }
 function renderPeriodCalendar(){
   const el = document.getElementById('periodCalGrid');

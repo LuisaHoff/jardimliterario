@@ -404,18 +404,18 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
 /* book color swatches */
 .color-swatches{display:flex;flex-wrap:wrap;gap:8px;}
-.color-wheel-row{display:flex;align-items:center;gap:20px;}
+.color-wheel-row{display:flex;align-items:center;gap:28px;}
 .color-wheel{
-  width:92px;height:92px;border-radius:50%;position:relative;cursor:pointer;flex-shrink:0;
+  width:150px;height:150px;border-radius:50%;position:relative;cursor:pointer;flex-shrink:0;
   background:conic-gradient(from 0deg, hsl(0,68%,66%), hsl(60,68%,66%), hsl(120,68%,66%), hsl(180,68%,66%), hsl(240,68%,66%), hsl(300,68%,66%), hsl(360,68%,66%));
   border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.18);
 }
 .color-wheel-dot{
-  position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);
+  position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);
   top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
-.color-current-preview{display:flex;flex-direction:column;align-items:center;gap:8px;}
-.color-current-dot{width:42px;height:42px;border-radius:50%;border:3px solid var(--line);box-shadow:0 3px 8px rgba(0,0,0,.15);background:#fff;transition:.15s;}
+.color-current-preview{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.color-current-dot{width:56px;height:56px;border-radius:50%;border:3px solid var(--line);box-shadow:0 3px 8px rgba(0,0,0,.15);background:#fff;transition:.15s;}
 .chip-picker{display:flex;flex-wrap:wrap;gap:7px;}
 .chip-picker .chip-btn{font-family:'Quicksand',sans-serif;font-weight:700;font-size:11.5px;padding:7px 13px;border-radius:20px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);cursor:pointer;transition:.12s;}
 .chip-picker .chip-btn.chip-active{background:linear-gradient(90deg,var(--petal),var(--petal-deep));color:#fff;border-color:transparent;}
@@ -499,6 +499,8 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .modal h2{margin:0 0 18px;color:var(--rosewood);font-size:23px;}
 .modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
 .modal .field{margin-bottom:20px;}
+.field-row{display:flex;gap:12px;margin-bottom:20px;}
+.field-row .field{flex:1;min-width:0;margin-bottom:0;}
 .form-section{background:var(--cream);border:1.5px solid var(--sage-deep);border-radius:18px;padding:22px 24px 6px;margin-bottom:18px;box-shadow:var(--shadow-sm);}
 .form-section-title{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:16px;color:var(--rosewood);margin:0 0 16px;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
@@ -1145,35 +1147,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="form-section-title">📝 Sinopse &amp; notas</div>
-          <div class="field"><label>Sinopse</label><textarea id="bSynopsis"></textarea></div>
-          <div class="field"><label>O que achei</label><textarea id="bThoughts" placeholder="Suas impressões, o que mais gostou..."></textarea></div>
-          <div class="field"><label>Frase favorita</label><input type="text" id="bQuote"></div>
-          <div class="field" style="margin-bottom:0;"><label>Tags (separadas por vírgula)</label><input type="text" id="bTags" placeholder="ex: romance, slow burn, favorito"></div>
-        </div>
-
-        <div class="form-section">
-          <div class="form-section-title">💰 Extras</div>
-          <div class="grid2">
-            <div class="field"><label>Preço estimado (opcional)</label><input type="text" id="bPrice" placeholder="ex: R$ 39,90"></div>
-            <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="bStore" placeholder="ex: Amazon, Livraria X"></div>
-            <div class="field" style="margin-bottom:0;"><label>Emprestado para (opcional)</label><input type="text" id="bLentTo" placeholder="Nome de quem pegou"></div>
-            <div class="field" style="margin-bottom:0;"><label>Data do empréstimo</label><input type="date" id="bLentDate"></div>
-          </div>
-          <div id="lentReturnRow" style="display:none;margin-top:10px;">
-            <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('bLentTo').value='';document.getElementById('bLentDate').value='';">✔️ Marcar como devolvido</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-col">
         <div class="form-section form-section-featured">
           <div class="form-section-title">📊 Progresso de leitura</div>
-          <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value"></div>
-          <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0">
-            <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin-top:4px;"></div>
+          <div class="field-row">
+            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value"></div>
+            <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
           </div>
+          <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
           <div class="field"><label>Status</label>
             <select id="bStatus" onchange="toggleDateFields()">
               <option value="quero-ler">Quero Ler</option>
@@ -1188,29 +1168,39 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
               <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
             </div>
           </div>
-          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
-          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
+          <div class="field-row" style="margin-bottom:0;">
+            <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
+            <div class="field"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
+          </div>
           <div id="rereadRow" style="display:none;margin-top:14px;">
             <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
             <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
           </div>
         </div>
 
+        <div class="form-section">
+          <div class="form-section-title">📝 Sinopse &amp; notas</div>
+          <div class="field"><label>Sinopse</label><textarea id="bSynopsis"></textarea></div>
+          <div class="field"><label>O que achei</label><textarea id="bThoughts" placeholder="Suas impressões, o que mais gostou..."></textarea></div>
+          <div class="field"><label>Frase favorita</label><input type="text" id="bQuote"></div>
+          <div class="field" style="margin-bottom:0;"><label>Tags (separadas por vírgula)</label><input type="text" id="bTags" placeholder="ex: romance, slow burn, favorito"></div>
+        </div>
+      </div>
+
+      <div class="form-col">
         <div class="form-section form-section-featured">
           <div class="form-section-title">🗓️ Planejamento de leitura <span style="font-weight:500;color:var(--ink-soft);font-size:11.5px;">(opcional)</span></div>
-          <div class="field"><label>Início planejado</label><input type="date" id="bPlanStart"></div>
-          <div class="field"><label>Fim planejado</label><input type="date" id="bPlanEnd"></div>
-          <div class="field"><label>Mês que quero ler</label>
-            <select id="bPlanMonth"><option value="">Nenhum</option></select>
+          <div class="field-row">
+            <div class="field"><label>Início planejado</label><input type="date" id="bPlanStart"></div>
+            <div class="field"><label>Fim planejado</label><input type="date" id="bPlanEnd"></div>
           </div>
-          <div class="field" style="margin-bottom:0;"><label>Ano que quero ler</label><input type="number" id="bPlanYear" placeholder="ex: 2026"></div>
-          <div style="font-size:11px;color:var(--ink-soft);margin-top:8px;">Definir um mês aqui coloca o livro na aba daquele mês na sua TBR ✨ Você pode voltar aqui e mudar isso quando quiser.</div>
-        </div>
-
-        <div class="form-section form-section-featured">
-          <div class="form-section-title">🎯 Metas &amp; desafios</div>
-          <div class="field"><label>Metas que este livro ajuda a completar</label><div class="chip-picker" id="bGoalsPicker"></div></div>
-          <div class="field" style="margin-bottom:0;"><label>Desafios que este livro faz parte</label><div class="chip-picker" id="bChallengesPicker"></div></div>
+          <div class="field-row" style="margin-bottom:0;">
+            <div class="field"><label>Mês que quero ler</label>
+              <select id="bPlanMonth"><option value="">Nenhum</option></select>
+            </div>
+            <div class="field"><label>Ano que quero ler</label><input type="number" id="bPlanYear" placeholder="ex: 2026"></div>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:12px;">Definir um mês aqui coloca o livro na aba daquele mês na sua TBR ✨ Você pode voltar aqui e mudar isso quando quiser.</div>
         </div>
 
         <div class="form-section form-section-featured">
@@ -1233,6 +1223,25 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <div id="suggestedColorsWrap" style="margin-top:12px;display:none;">
             <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;">Cores sugeridas da capa (até 10):</div>
             <div class="color-swatches" id="suggestedColors"></div>
+          </div>
+        </div>
+
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">🎯 Metas &amp; desafios</div>
+          <div class="field"><label>Metas que este livro ajuda a completar</label><div class="chip-picker" id="bGoalsPicker"></div></div>
+          <div class="field" style="margin-bottom:0;"><label>Desafios que este livro faz parte</label><div class="chip-picker" id="bChallengesPicker"></div></div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">💰 Extras</div>
+          <div class="grid2">
+            <div class="field"><label>Preço estimado (opcional)</label><input type="text" id="bPrice" placeholder="ex: R$ 39,90"></div>
+            <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="bStore" placeholder="ex: Amazon, Livraria X"></div>
+            <div class="field" style="margin-bottom:0;"><label>Emprestado para (opcional)</label><input type="text" id="bLentTo" placeholder="Nome de quem pegou"></div>
+            <div class="field" style="margin-bottom:0;"><label>Data do empréstimo</label><input type="date" id="bLentDate"></div>
+          </div>
+          <div id="lentReturnRow" style="display:none;margin-top:10px;">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('bLentTo').value='';document.getElementById('bLentDate').value='';">✔️ Marcar como devolvido</button>
           </div>
         </div>
       </div>
@@ -2405,7 +2414,7 @@ function updateColorPreview(){
   if(wheelDot){
     if(selectedColor){
       const hue = hexToHue(selectedColor);
-      positionWheelDot(hue, 32);
+      positionWheelDot(hue, 52);
     } else {
       wheelDot.style.transform = 'translate(-50%,-50%)';
     }

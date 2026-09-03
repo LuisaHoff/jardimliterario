@@ -372,6 +372,19 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .quick-log-row input{font-family:'Quicksand',sans-serif;font-weight:600;font-size:12.5px;padding:9px 12px;border-radius:12px;border:1.5px solid var(--line);outline:none;}
 .quick-log-row input:focus{border-color:var(--petal);}
 .mini-chart-scroll{overflow-x:auto;padding-bottom:6px;margin-bottom:4px;}
+.reading-timeline{display:flex;flex-direction:column;gap:0;margin-bottom:6px;}
+.timeline-entry{display:flex;gap:14px;cursor:pointer;position:relative;padding-bottom:16px;}
+.timeline-entry:not(:last-child)::before{content:'';position:absolute;left:38px;top:28px;bottom:0;width:2px;background:var(--line);}
+.timeline-date-col{flex:0 0 68px;text-align:right;padding-top:4px;}
+.timeline-date{font-family:'Quicksand',sans-serif;font-weight:700;font-size:11.5px;color:var(--ink-soft);}
+.timeline-mood{font-size:14px;margin-top:2px;}
+.timeline-card{flex:1;min-width:0;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;transition:.12s;}
+.timeline-entry:hover .timeline-card{border-color:var(--petal);}
+.timeline-card-head{font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;color:var(--petal-deep);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+.timeline-card-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;gap:8px;}
+.timeline-page{font-family:'Fraunces',serif;font-weight:600;font-size:14px;color:var(--ink);}
+.timeline-pct{font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:var(--rosewood);flex-shrink:0;}
+.timeline-delta{font-size:11.5px;color:var(--ink-soft);margin-top:7px;text-align:right;}
 .mini-chart-scroll .bar-chart{height:90px;min-width:max-content;padding:0 2px;gap:10px;}
 .mini-chart-scroll .bar-col{flex:0 0 30px;width:30px;}
 
@@ -793,8 +806,12 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         </div>
       </div>
       <div class="vine-divider"></div>
+      <div class="chip-picker" style="margin-bottom:16px;">
+        <button class="chip-btn chip-active" id="tbrModeMesBtn" onclick="switchTbrViewMode('mes')">🗓️ Por mês</button>
+        <button class="chip-btn" id="tbrModeGeneroBtn" onclick="switchTbrViewMode('genero')">🏷️ Por gênero</button>
+      </div>
       <div class="tbr-tabs" id="tbrTabsRow"></div>
-      <div style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">🗓️ O mês/ano de cada livro é definido no cadastro dele — edite o livro (ícone 🗓️ ou abrindo os detalhes) pra mudar quando ele entra aqui.</div>
+      <div id="tbrModeHint" style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">🗓️ O mês/ano de cada livro é definido no cadastro dele — edite o livro (ícone 🗓️ ou abrindo os detalhes) pra mudar quando ele entra aqui.</div>
       <input type="text" id="tbrSearchBox" placeholder="🔎 Buscar nesta lista..." oninput="renderTbrTabContent()" style="width:100%;margin-bottom:16px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;">
       <div class="queue-list" id="tbrTabContent"></div>
     </div>
@@ -2165,6 +2182,14 @@ function renderWishlistPage(){
   `).join('')}</div>`;
 }
 let selectedTbrTab = 'none';
+let selectedGenreTab = null;
+function getCurrentGenreBooks(){
+  const wishlist = DB.books.filter(b=>b.status==='quero-ler');
+  const filtered = selectedGenreTab===null
+    ? wishlist.filter(b=>!(b.genre||'').trim())
+    : wishlist.filter(b=>(b.genre||'').trim()===selectedGenreTab);
+  return filtered.sort((a,b)=>(a.priority||9999)-(b.priority||9999));
+}
 function tbrTabKey(year, month){ return year+'-'+month; }
 function getTbrMonthGroups(){
   const map = new Map();
@@ -2184,6 +2209,35 @@ function getCurrentTbrBooks(){
   const [year, month] = selectedTbrTab.split('-').map(Number);
   return DB.books.filter(b=>b.status==='quero-ler' && b.planMonth===month && b.planYear===year).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
 }
+let tbrViewMode = 'mes'; // 'mes' | 'genero'
+function switchTbrViewMode(mode){
+  tbrViewMode = mode;
+  selectedTbrTab = mode==='mes' ? 'none' : null;
+  document.getElementById('tbrModeMesBtn').classList.toggle('chip-active', mode==='mes');
+  document.getElementById('tbrModeGeneroBtn').classList.toggle('chip-active', mode==='genero');
+  document.getElementById('tbrModeHint').textContent = mode==='mes'
+    ? '🗓️ O mês/ano de cada livro é definido no cadastro dele — edite o livro (ícone 🗓️ ou abrindo os detalhes) pra mudar quando ele entra aqui.'
+    : '🏷️ Agrupado pelo gênero de cada livro. Use o ícone 🏷️ pra definir ou trocar o gênero de um livro direto por aqui.';
+  const searchBox = document.getElementById('tbrSearchBox');
+  if(searchBox) searchBox.value = '';
+  renderTbrTabs();
+  renderTbrTabContent();
+}
+function bookPlanLabel(b){
+  return (b.planMonth!==null && b.planMonth!==undefined && b.planYear) ? `📅 ${MONTHS_PT[b.planMonth]} ${b.planYear}` : '🗂️ Sem mês';
+}
+function quickAssignGenre(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  const existing = [...new Set(DB.books.map(x=>x.genre).filter(Boolean))].sort();
+  const hint = existing.length ? `Gêneros já usados: ${existing.join(', ')}` : 'Nenhum gênero cadastrado ainda.';
+  const value = prompt(`Gênero de "${b.title}":\n\n${hint}`, b.genre||'');
+  if(value===null) return;
+  b.genre = value.trim();
+  save();
+  renderTbrTabs();
+  renderTbrTabContent();
+}
 function renderTbrPage(){
   renderTbrTabs();
   renderTbrTabContent();
@@ -2198,29 +2252,52 @@ function selectTbrTab(id){
 function renderTbrTabs(){
   const el = document.getElementById('tbrTabsRow');
   if(!el) return;
-  const groups = getTbrMonthGroups();
-  const noneCount = DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).length;
-  // se o mês selecionado ficou vazio nesse meio tempo, volta pra "Sem mês"
-  if(selectedTbrTab!=='none' && !groups.some(g=>tbrTabKey(g.year,g.month)===selectedTbrTab)) selectedTbrTab='none';
-  let html = `<button class="tbr-tab ${selectedTbrTab==='none'?'active':''}" onclick="selectTbrTab('none')">🗂️ Sem mês <span class="tbr-tab-count">${noneCount}</span></button>`;
-  html += groups.map(g=>{
-    const key = tbrTabKey(g.year,g.month);
-    return `<button class="tbr-tab ${selectedTbrTab===key?'active':''}" onclick="selectTbrTab('${key}')">📅 ${MONTHS_PT[g.month]} ${g.year} <span class="tbr-tab-count">${g.bookIds.length}</span></button>`;
-  }).join('');
-  el.innerHTML = html;
+  if(tbrViewMode==='mes'){
+    const groups = getTbrMonthGroups();
+    const noneCount = DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).length;
+    if(selectedTbrTab!=='none' && !groups.some(g=>tbrTabKey(g.year,g.month)===selectedTbrTab)) selectedTbrTab='none';
+    let html = `<button class="tbr-tab ${selectedTbrTab==='none'?'active':''}" onclick="selectTbrTab('none')">🗂️ Sem mês <span class="tbr-tab-count">${noneCount}</span></button>`;
+    html += groups.map(g=>{
+      const key = tbrTabKey(g.year,g.month);
+      return `<button class="tbr-tab ${selectedTbrTab===key?'active':''}" onclick="selectTbrTab('${key}')">📅 ${MONTHS_PT[g.month]} ${g.year} <span class="tbr-tab-count">${g.bookIds.length}</span></button>`;
+    }).join('');
+    el.innerHTML = html;
+  } else {
+    const wishlist = DB.books.filter(b=>b.status==='quero-ler');
+    const genres = [...new Set(wishlist.map(b=>(b.genre||'').trim()).filter(Boolean))].sort();
+    const noneCount = wishlist.filter(b=>!(b.genre||'').trim()).length;
+    if(selectedGenreTab!==null && !genres.includes(selectedGenreTab)) selectedGenreTab = null;
+    let html = `<button class="tbr-tab ${selectedGenreTab===null?'active':''}" onclick="selectGenreTab(null)">🗂️ Sem gênero <span class="tbr-tab-count">${noneCount}</span></button>`;
+    html += genres.map(g=>{
+      const count = wishlist.filter(b=>(b.genre||'').trim()===g).length;
+      return `<button class="tbr-tab ${selectedGenreTab===g?'active':''}" onclick="selectGenreTab('${esc(g)}')">🏷️ ${esc(g)} <span class="tbr-tab-count">${count}</span></button>`;
+    }).join('');
+    el.innerHTML = html;
+  }
+}
+function selectGenreTab(g){
+  selectedGenreTab = g;
+  const searchBox = document.getElementById('tbrSearchBox');
+  if(searchBox) searchBox.value = '';
+  renderTbrTabs();
+  renderTbrTabContent();
 }
 function renderTbrTabContent(){
   const el = document.getElementById('tbrTabContent');
   if(!el) return;
   const q = (document.getElementById('tbrSearchBox')?.value||'').toLowerCase().trim();
-  let books = getCurrentTbrBooks();
+  let books = tbrViewMode==='mes' ? getCurrentTbrBooks() : getCurrentGenreBooks();
   if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
   if(books.length===0){
     el.innerHTML = q
       ? `<div class="card empty-state"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
-      : (selectedTbrTab==='none'
-        ? `<div class="card empty-state"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
-        : `<div class="card empty-state"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`);
+      : (tbrViewMode==='mes'
+        ? (selectedTbrTab==='none'
+          ? `<div class="card empty-state"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
+          : `<div class="card empty-state"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`)
+        : (selectedGenreTab===null
+          ? `<div class="card empty-state"><div class="big">🗂️</div>Todos os seus livros da TBR já têm um gênero definido. 🌷</div>`
+          : `<div class="card empty-state"><div class="big">🏷️</div>Nenhum livro nesse gênero ainda.</div>`));
     return;
   }
   el.innerHTML = books.map((b,i)=>`
@@ -2232,7 +2309,9 @@ function renderTbrTabContent(){
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
         <div class="dbl-title">${esc(b.title)}${b.favorite?' ❤️':''}</div>
         <div class="dbl-sub">${esc(b.author)}${b.price?' · '+esc(b.price):''}${b.store?' · '+esc(b.store):''}</div>
+        ${tbrViewMode==='genero' ? `<div class="dbl-sub" style="margin-top:2px;">${bookPlanLabel(b)}</div>` : ''}
       </div>
+      ${tbrViewMode==='genero' ? `<button class="btn btn-ghost btn-sm" title="Definir gênero" onclick="event.stopPropagation(); quickAssignGenre('${b.id}')">🏷️</button>` : ''}
       <button class="btn btn-ghost btn-sm" title="Editar planejamento" onclick="event.stopPropagation(); openBookModal('${b.id}')">🗓️</button>
     </div>
   `).join('');
@@ -2242,7 +2321,7 @@ function queueDragStart(e,id){ dragQueueId=id; e.dataTransfer.effectAllowed='mov
 function queueDrop(e,targetId){
   e.preventDefault();
   if(!dragQueueId || dragQueueId===targetId) return;
-  const books = getCurrentTbrBooks();
+  const books = tbrViewMode==='mes' ? getCurrentTbrBooks() : getCurrentGenreBooks();
   const order = books.map(b=>b.id);
   const fromIdx = order.indexOf(dragQueueId);
   const toIdx = order.indexOf(targetId);
@@ -2621,17 +2700,34 @@ function renderBookDetail(b){
   const chronoLogs = bookLogs.filter(l=>Number(l.pagesRead)>0).sort((a,c)=> new Date(a.date)-new Date(c.date));
   let progressChartHtml = '';
   if(chronoLogs.length>=1){
-    const maxP = Math.max(1, ...chronoLogs.map(l=>Number(l.pagesRead)));
+    let running = 0;
+    const withCumulative = chronoLogs.map(l=>{
+      running += Number(l.pagesRead);
+      return { ...l, cumulative: Math.min(running, b.totalPages||running) };
+    }).reverse(); // mais recente primeiro, igual à referência
+    const totalP = b.totalPages || withCumulative[0].cumulative;
     progressChartHtml = `
-      <div class="mini-chart-scroll"><div class="bar-chart">
-        ${chronoLogs.map(l=>`
-          <div class="bar-col" data-tooltip="${fmtDate(l.date)} — ${l.pagesRead} págs">
-            <span class="bar-value">${l.pagesRead}</span>
-            <div class="bar" style="height:${(Number(l.pagesRead)/maxP)*100}%"></div>
-            <div class="bar-lbl" style="font-size:9px;">${fmtDate(l.date)}</div>
-          </div>
-        `).join('')}
-      </div></div>
+      <div class="reading-timeline">
+        ${withCumulative.map(l=>{
+          const pct = totalP ? Math.round((l.cumulative/totalP)*100) : 0;
+          return `
+          <div class="timeline-entry" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
+            <div class="timeline-date-col">
+              <div class="timeline-date">${fmtDate(l.date)}</div>
+              ${l.mood?`<div class="timeline-mood">${l.mood}</div>`:''}
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-head">Progresso</div>
+              <div class="timeline-card-row">
+                <span class="timeline-page">Página ${l.cumulative} de ${totalP}</span>
+                <span class="timeline-pct">${pct}% lido</span>
+              </div>
+              <div class="vine-track" style="height:8px;"><div class="vine-fill" style="width:${pct}%"></div></div>
+              <div class="timeline-delta">+${l.pagesRead} página${l.pagesRead==1?'':'s'} lida${l.pagesRead==1?'':'s'}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
     `;
   }
   const readingLogHtml = `
@@ -2646,14 +2742,14 @@ function renderBookDetail(b){
       <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
       <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
     </div>
-    ${bookLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${bookLogs.map(l=>`
+    ${(()=>{ const noPageLogs = bookLogs.filter(l=>!(Number(l.pagesRead)>0)); return noPageLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${noPageLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
         <span class="diary-line-date">${fmtDate(l.date)}</span>
         <span class="diary-line-mood">${l.mood||'📖'}</span>
-        <span class="diary-line-book">${l.pagesRead?l.pagesRead+' páginas':'sem páginas'}${l.minutesRead?' · '+l.minutesRead+' min':''}</span>
+        <span class="diary-line-book">${l.minutesRead?l.minutesRead+' min':'sem páginas'}</span>
         ${l.note?`<div class="diary-line-note">${esc(l.note)}</div>`:''}
       </div>
-    `).join('')}</div>` : `<div class="empty-state" style="padding:16px;font-size:12.5px;">Nenhum registro de leitura ainda para este livro.</div>`}
+    `).join('')}</div>` : (bookLogs.length===0 ? `<div class="empty-state" style="padding:16px;font-size:12.5px;">Nenhum registro de leitura ainda para este livro.</div>` : ''); })()}
   `;
 
   document.getElementById('bookDetailContent').innerHTML = `

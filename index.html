@@ -367,6 +367,8 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .detail-alert-lent{background:#FDF3E0;color:#A67A2E;}
 .detail-alert-paused{background:#EFEFEF;color:#777;}
 .quick-log-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.quick-log-card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-top:10px;}
+.quick-log-card-label{font-family:'Quicksand',sans-serif;font-weight:700;font-size:11px;color:var(--petal-deep);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;}
 .quick-log-row input[type=date]{flex:1;min-width:130px;}
 .quick-log-row input[type=number]{width:110px;}
 .quick-log-row input{font-family:'Quicksand',sans-serif;font-weight:600;font-size:12.5px;padding:9px 12px;border-radius:12px;border:1.5px solid var(--line);outline:none;}
@@ -502,6 +504,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .field-row{display:flex;gap:12px;margin-bottom:20px;}
 .field-row .field{flex:1;min-width:0;margin-bottom:0;}
 .form-section{background:var(--cream);border:1.5px solid var(--sage-deep);border-radius:18px;padding:22px 24px 6px;margin-bottom:18px;box-shadow:var(--shadow-sm);}
+.form-section > *:last-child{margin-bottom:20px !important;}
 .form-section-title{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:16px;color:var(--rosewood);margin:0 0 16px;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
 .form-col .form-section{margin-bottom:20px;}
@@ -2741,24 +2744,27 @@ function renderBookDetail(b){
   }
   const readingLogHtml = `
     ${progressChartHtml}
-    <div class="quick-log-row">
-      <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
-      <select id="quickLogMode" class="select-sm">
-        <option value="delta">+ páginas lidas</option>
-        <option value="current">página atual</option>
-        <option value="percent">% lido</option>
-      </select>
-      <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
-      <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
+    <div class="quick-log-card">
+      <div class="quick-log-card-label">✏️ Novo registro</div>
+      <div class="quick-log-row">
+        <input type="date" id="quickLogDate" value="${new Date().toISOString().slice(0,10)}">
+        <select id="quickLogMode" class="select-sm">
+          <option value="delta">+ páginas lidas</option>
+          <option value="current">página atual</option>
+          <option value="percent">% lido</option>
+        </select>
+        <input type="number" id="quickLogValue" min="0" placeholder="ex: 24">
+        <button class="btn btn-sage btn-sm" onclick="addQuickPageLog('${b.id}')">+ Registrar</button>
+      </div>
     </div>
-    ${(()=>{ const noPageLogs = bookLogs.filter(l=>!(Number(l.pagesRead)>0)); return noPageLogs.length ? `<div class="card diary-lines" style="margin-top:10px;">${noPageLogs.map(l=>`
+    ${(()=>{ const noPageLogs = bookLogs.filter(l=>!(Number(l.pagesRead)>0)); return noPageLogs.length ? `<div class="card diary-lines" style="margin:14px 0 20px;">${noPageLogs.map(l=>`
       <div class="diary-line" onclick="closeModal('bookDetailModalOverlay'); openDiaryEditModal('${l.id}')">
         <span class="diary-line-date">${fmtDate(l.date)}</span>
         <span class="diary-line-mood">${l.mood||'📖'}</span>
         <span class="diary-line-book">${l.minutesRead?l.minutesRead+' min':'sem páginas'}</span>
         ${l.note?`<div class="diary-line-note">${esc(l.note)}</div>`:''}
       </div>
-    `).join('')}</div>` : (bookLogs.length===0 ? `<div class="empty-state" style="padding:16px;font-size:12.5px;">Nenhum registro de leitura ainda para este livro.</div>` : ''); })()}
+    `).join('')}</div>` : (bookLogs.length===0 ? `<div class="empty-state" style="padding:22px 16px 20px;font-size:12.5px;"><div style="font-size:22px;margin-bottom:6px;">📖</div>Nenhum registro de leitura ainda para este livro.</div>` : `<div style="margin-bottom:20px;"></div>`); })()}
   `;
 
   document.getElementById('bookDetailContent').innerHTML = `

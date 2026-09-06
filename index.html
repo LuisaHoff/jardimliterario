@@ -406,7 +406,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
 /* book color swatches */
 .color-swatches{display:flex;flex-wrap:wrap;gap:8px;}
-.color-wheel-row{display:flex;align-items:center;gap:28px;}
+.color-wheel-row{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
 .color-wheel{
   width:150px;height:150px;border-radius:50%;position:relative;cursor:pointer;flex-shrink:0;
   background:conic-gradient(from 0deg, hsl(0,68%,66%), hsl(60,68%,66%), hsl(120,68%,66%), hsl(180,68%,66%), hsl(240,68%,66%), hsl(300,68%,66%), hsl(360,68%,66%));
@@ -501,8 +501,8 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .modal h2{margin:0 0 18px;color:var(--rosewood);font-size:23px;}
 .modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
 .modal .field{margin-bottom:20px;}
-.field-row{display:flex;gap:12px;margin-bottom:20px;}
-.field-row .field{flex:1;min-width:0;margin-bottom:0;}
+.field-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.field-row .field{flex:1;min-width:130px;margin-bottom:0;}
 .form-section{background:var(--cream);border:1.5px solid var(--sage-deep);border-radius:18px;padding:22px 24px 6px;margin-bottom:18px;box-shadow:var(--shadow-sm);}
 .form-section > *:last-child{margin-bottom:20px !important;}
 .form-section-title{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:16px;color:var(--rosewood);margin:0 0 16px;}

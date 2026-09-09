@@ -501,8 +501,9 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .modal h2{margin:0 0 18px;color:var(--rosewood);font-size:23px;}
 .modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
 .modal .field{margin-bottom:20px;}
-.field-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
-.field-row .field{flex:1;min-width:130px;margin-bottom:0;}
+.field-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.field-row .field{flex:1;min-width:100px;margin-bottom:0;}
+.field-row .field input[type=date]{font-size:12px;padding:10px 8px;}
 .form-section{background:var(--cream);border:1.5px solid var(--sage-deep);border-radius:18px;padding:22px 24px 6px;margin-bottom:18px;box-shadow:var(--shadow-sm);}
 .form-section > *:last-child{margin-bottom:20px !important;}
 .form-section-title{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-weight:600;font-style:italic;font-size:16px;color:var(--rosewood);margin:0 0 16px;}
@@ -1176,7 +1177,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
             <div class="field"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
           </div>
           <div id="rereadRow" style="display:none;margin-top:14px;">
-            <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
+            <button class="btn btn-sage btn-sm" type="button" style="width:100%;justify-content:center;line-height:1.35;padding-top:10px;padding-bottom:10px;" onclick="markReread()">🔁 Já li de novo?<br>Marcar releitura</button>
             <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
           </div>
         </div>
@@ -1831,7 +1832,7 @@ function renderPlansSection(){
   if(!wrap) return;
   const today = new Date().toISOString().slice(0,10);
   const active = DB.books.filter(b=>{
-    if(b.status!=='quero-ler' || !b.planStart) return false;
+    if(b.status==='lido' || !b.planStart) return false;
     const end = b.planEnd || b.planStart;
     return end>=today;
   }).sort((a,b)=> new Date(a.planStart)-new Date(b.planStart));
@@ -1840,7 +1841,7 @@ function renderPlansSection(){
   document.getElementById('plansList').innerHTML = active.map(b=>{
     const end = b.planEnd || b.planStart;
     const isNow = b.planStart<=today && end>=today;
-    const statusTag = isNow ? '📖 hoje é dia de ler · ' : '';
+    const statusTag = b.status==='lendo' ? '📖 lendo agora · ' : (isNow ? '📖 hoje é dia de ler · ' : '');
     return `<div class="dbl-item">
       <div style="display:flex;gap:12px;align-items:center;flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
         ${coverHtml(b,'cover')}
@@ -3272,7 +3273,7 @@ function renderCalendar(){
   const max = Math.max(1, ...Object.values(byDay).map(d=>d.total));
   const plannedDays = new Set();
   DB.books.forEach(b=>{
-    if(b.status!=='quero-ler' || !b.planStart) return;
+    if(b.status==='lido' || !b.planStart) return;
     let d = new Date(b.planStart+'T00:00:00');
     const end = new Date((b.planEnd||b.planStart)+'T00:00:00');
     let guard = 0;
@@ -3395,7 +3396,7 @@ function getReadingPeriodsForMonth(year, month){
     }
   });
   DB.books.forEach(b=>{
-    if(b.status==='quero-ler' && b.planStart && b.planEnd){
+    if(b.status!=='lido' && b.planStart && b.planEnd){
       const start = new Date(b.planStart+'T00:00:00');
       const end = new Date(b.planEnd+'T00:00:00');
       if(start<=monthEnd && end>=monthStart){

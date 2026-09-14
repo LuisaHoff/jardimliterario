@@ -1171,10 +1171,8 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
               <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
             </div>
           </div>
-          <div class="field-row" style="margin-bottom:0;">
-            <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
-            <div class="field"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
-          </div>
+          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
+          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
           <div id="rereadRow" style="display:none;margin-top:14px;">
             <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
             <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
@@ -1193,10 +1191,8 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="form-col">
         <div class="form-section form-section-featured">
           <div class="form-section-title">🗓️ Planejamento de leitura <span style="font-weight:500;color:var(--ink-soft);font-size:11.5px;">(opcional)</span></div>
-          <div class="field-row">
-            <div class="field"><label>Início planejado</label><input type="date" id="bPlanStart"></div>
-            <div class="field"><label>Fim planejado</label><input type="date" id="bPlanEnd"></div>
-          </div>
+          <div class="field"><label>Início planejado</label><input type="date" id="bPlanStart"></div>
+          <div class="field"><label>Fim planejado</label><input type="date" id="bPlanEnd"></div>
           <div class="field-row" style="margin-bottom:0;">
             <div class="field"><label>Mês que quero ler</label>
               <select id="bPlanMonth"><option value="">Nenhum</option></select>
@@ -1838,7 +1834,7 @@ function renderPlansSection(){
   if(!wrap) return;
   const today = localDateStr(new Date());
   const active = DB.books.filter(b=>{
-    if(b.status!=='quero-ler' || !b.planStart) return false;
+    if(b.status==='lido' || !b.planStart) return false;
     const end = b.planEnd || b.planStart;
     return end>=today;
   }).sort((a,b)=> new Date(a.planStart)-new Date(b.planStart));
@@ -3279,7 +3275,7 @@ function renderCalendar(){
   const max = Math.max(1, ...Object.values(byDay).map(d=>d.total));
   const plannedDays = new Set();
   DB.books.forEach(b=>{
-    if(b.status!=='quero-ler' || !b.planStart) return;
+    if(b.status==='lido' || !b.planStart) return;
     let d = new Date(b.planStart+'T00:00:00');
     const end = new Date((b.planEnd||b.planStart)+'T00:00:00');
     let guard = 0;
@@ -3402,7 +3398,7 @@ function getReadingPeriodsForMonth(year, month){
     }
   });
   DB.books.forEach(b=>{
-    if(b.status==='quero-ler' && b.planStart && b.planEnd){
+    if(b.status!=='lido' && b.planStart && b.planEnd){
       const start = new Date(b.planStart+'T00:00:00');
       const end = new Date(b.planEnd+'T00:00:00');
       if(start<=monthEnd && end>=monthStart){

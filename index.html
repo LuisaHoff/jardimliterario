@@ -234,7 +234,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .diary-form-row .field{min-width:0;}
 .field label{display:block;font-size:11.5px;font-weight:700;color:var(--moss);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
 .field input, .field select, .field textarea{
-  width:100%;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13.5px;color:var(--ink);
+  width:100%;min-width:0;max-width:100%;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13.5px;color:var(--ink);
   padding:10px 13px;border-radius:12px;border:1.5px solid var(--line);background:#fff;outline:none;resize:vertical;
 }
 .field textarea{min-height:64px;font-weight:500;}
@@ -272,12 +272,21 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .period-bar-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.25);}
 .period-bar-sub{font-size:9px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .period-bar-planned{background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px);}
-.checkpoint-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.checkpoint-row input[type="date"]{flex:1.3;}
+.checkpoint-row-card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:9px 10px;margin-bottom:10px;}
+.checkpoint-row{display:flex;align-items:center;gap:8px;}
+.checkpoint-row input[type="date"]{flex:1.3;min-width:0;}
 .checkpoint-row .cp-pct-wrap{flex:1;display:flex;align-items:center;gap:4px;}
 .checkpoint-row .cp-pct-wrap input{width:100%;}
-.checkpoint-row .cp-remove{flex-shrink:0;background:none;border:none;color:var(--ink-soft);font-size:17px;cursor:pointer;padding:4px 6px;line-height:1;}
-.checkpoint-row .cp-remove:hover{color:var(--rosewood);}
+.checkpoint-row .cp-remove{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:none;border:none;color:var(--ink-soft);font-size:15px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.checkpoint-row .cp-remove:hover{color:var(--rosewood);background:var(--blush-deep);}
+.cp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
+.detail-star-rating{display:flex;gap:5px;font-size:24px;margin-top:2px;}
+.detail-star-rating span{cursor:pointer;opacity:.3;transition:.12s;}
+.detail-star-rating span:hover{transform:scale(1.15);}
+.detail-star-rating span.on{opacity:1;}
+.cp-hint{font-size:11px;color:var(--ink-soft);margin:6px 2px 0;min-height:14px;}
+.cp-hint .cp-badge-met{color:var(--sage-deep);font-weight:700;}
+.cp-hint .cp-badge-missed{color:var(--rosewood);font-weight:700;}
 .period-day-num{position:relative;}
 .cp-badges{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px;}
 .cp-badge{font-size:8.5px;font-weight:700;border-radius:5px;padding:1px 4px;color:#fff;white-space:nowrap;cursor:default;}
@@ -327,6 +336,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
 /* queue / priority list */
 .queue-list{display:flex;flex-direction:column;gap:10px;}
+.tbr-book{position:relative;}
+.tbr-num-badge{position:absolute;top:6px;left:6px;background:var(--rosewood);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:2;}
+.tbr-reorder{display:flex;justify-content:center;gap:6px;margin-top:8px;}
+.tbr-reorder button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--blush-deep);background:#fff;color:var(--rosewood);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.tbr-reorder button:hover{background:var(--blush-deep);}
+.tbr-reorder button:disabled{opacity:.25;cursor:default;}
+.tbr-reorder button:disabled:hover{background:#fff;}
 .queue-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--cream);border:1px solid var(--line);border-radius:14px;}
 .queue-num{font-family:'Fraunces',serif;font-weight:600;font-size:16px;color:var(--rosewood);width:24px;text-align:center;flex-shrink:0;}
 .queue-handle{cursor:grab;color:var(--ink-soft);font-size:16px;flex-shrink:0;}
@@ -743,8 +759,18 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
       <div class="stat-grid" id="statGrid"></div>
 
+      <div id="todayGoalSectionWrap" style="display:none;">
+        <div class="section-title">🎯 Meta de progresso de hoje</div>
+        <div class="detail-book-list card" style="padding:14px;margin-bottom:34px;" id="todayGoalList"></div>
+      </div>
+
       <div class="section-title">📖 Lendo agora</div>
       <div class="reading-row" id="currentReads"></div>
+
+      <div id="upcomingReadSectionWrap" style="display:none;">
+        <div class="section-title">📚 Próximos a ler</div>
+        <div class="shelf" id="upcomingReadList" style="margin-bottom:34px;"></div>
+      </div>
 
       <div id="plansSectionWrap" style="display:none;">
         <div class="section-title">🗓️ Planejado para os próximos dias</div>
@@ -827,9 +853,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <button class="chip-btn" id="tbrModeGeneroBtn" onclick="switchTbrViewMode('genero')">🏷️ Por gênero</button>
       </div>
       <div class="tbr-tabs" id="tbrTabsRow"></div>
-      <div id="tbrModeHint" style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">🗓️ O mês/ano de cada livro é definido no cadastro dele — edite o livro (ícone 🗓️ ou abrindo os detalhes) pra mudar quando ele entra aqui.</div>
-      <input type="text" id="tbrSearchBox" placeholder="🔎 Buscar nesta lista..." oninput="renderTbrTabContent()" style="width:100%;margin-bottom:16px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;">
-      <div class="queue-list" id="tbrTabContent"></div>
+      <div id="tbrModeHint" style="font-size:11.5px;color:var(--ink-soft);margin:-8px 0 14px;">🗓️ O planejamento de leitura de cada livro aparece embaixo da capa quando já estiver definido — pra mudar, abra o livro e edite direto por lá. Use as setas ▲▼ nas capas pra reorganizar a ordem de prioridade.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <input type="text" id="tbrSearchBox" placeholder="🔎 Buscar nesta lista..." oninput="renderTbrTabContent()" style="flex:1;min-width:180px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;">
+        <button class="btn btn-ghost btn-sm" id="tbrShelfViewToggleBtn" onclick="tbrShelfMode=!tbrShelfMode; renderTbrTabContent();">🪵 Ver como estante</button>
+      </div>
+      <div class="shelf" id="tbrShelfGrid"></div>
+      <div class="shelf-view" id="tbrShelfView" style="display:none;"></div>
     </div>
 
     <!-- ===== LISTA DE DESEJOS (livros pra comprar) ===== -->
@@ -840,7 +870,17 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       </div>
       <div class="vine-divider"></div>
       <div class="stat-grid" id="wishlistStatGrid" style="grid-template-columns:repeat(2,1fr);margin-bottom:24px;"></div>
-      <div id="wishlistList"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <input type="text" id="wishlistSearchBox" placeholder="🔎 Buscar por título, autora ou loja..." oninput="renderWishlistPage()" style="flex:1;min-width:180px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:13px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;">
+        <select id="wishlistSortBy" onchange="renderWishlistPage()" class="select-sm">
+          <option value="recent">Adicionados recentemente</option>
+          <option value="price-asc">💰 Preço: menor primeiro</option>
+          <option value="price-desc">💰 Preço: maior primeiro</option>
+          <option value="title">Título A-Z</option>
+          <option value="store">🛍️ Loja A-Z</option>
+        </select>
+      </div>
+      <div class="shelf" id="wishlistGrid"></div>
     </div>
 
     <!-- ===== DIÁRIO ===== -->
@@ -851,6 +891,11 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
       <div class="vine-divider"></div>
 
       <div class="streak-banner card" id="streakBanner"></div>
+
+      <div class="card" style="padding:20px 22px;margin-bottom:26px;" id="progressGoalsWrap">
+        <div class="section-title" style="margin-bottom:12px;">🎯 Metas de progresso</div>
+        <div class="detail-book-list" id="progressGoalsList"></div>
+      </div>
 
       <div class="card" style="padding:20px 22px;margin-bottom:26px;">
         <div class="section-title" style="margin-bottom:12px;flex-wrap:wrap;">
@@ -1164,7 +1209,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <div class="form-section form-section-featured">
           <div class="form-section-title">📊 Progresso de leitura</div>
           <div class="field-row">
-            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value"></div>
+            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value; refreshAllCheckpointHints();"></div>
             <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
           </div>
           <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
@@ -1215,9 +1260,12 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
         <div class="form-section form-section-featured">
           <div class="form-section-title">🎯 Metas de progresso <span style="font-weight:500;color:var(--ink-soft);font-size:11.5px;">(opcional)</span></div>
-          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:12px;">Ex.: "chegar em 40% até dia 22". Elas aparecem como marcadores no calendário do diário.</div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:12px;">Ex.: "chegar em 40% até dia 22". Elas aparecem como marcadores no calendário do diário e na aba inicial.</div>
           <div id="bCheckpointsList"></div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="addCheckpointRow()" style="margin-top:4px;">+ Adicionar meta de progresso</button>
+          <div class="cp-actions">
+            <button type="button" class="btn btn-sage btn-sm" onclick="addCheckpointRow()">🎯 Adicionar meta</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="suggestCheckpoints()">🌱 Sugerir 25/50/75/100%</button>
+          </div>
         </div>
 
         <div class="form-section form-section-featured">
@@ -1846,6 +1894,55 @@ function renderPausedReminder(){
   }).join('');
 }
 
+/* mostra, na aba inicial, a(s) meta(s) de progresso de hoje — ou, se não houver, uma prévia da próxima */
+function renderTodayGoal(){
+  const wrap = document.getElementById('todayGoalSectionWrap');
+  const list = document.getElementById('todayGoalList');
+  if(!wrap || !list) return;
+  const today = localDateStr(new Date());
+  const all = getAllCheckpoints();
+  const todays = all.filter(c=> c.date===today);
+  if(todays.length){
+    wrap.style.display = 'block';
+    list.innerHTML = todays.map(c=>{
+      const isMet = c.state==='met';
+      const remaining = c.targetPage ? Math.max(0, c.targetPage-(c.book.currentPage||0)) : null;
+      const sub = isMet ? 'meta batida hoje! 🎉' : (remaining!==null ? `faltam ${remaining} página${remaining===1?'':'s'}` : 'registre sua leitura de hoje');
+      return `<div class="dbl-item" onclick="openBookDetail('${c.book.id}')">
+        ${coverHtml(c.book,'cover')}
+        <div><div class="dbl-title">${esc(c.book.title)}</div><div class="dbl-sub">${isMet?'✅':'🎯'} chegar em ${c.percent}%${c.targetPage?` (pág. ${c.targetPage})`:''} · ${sub}</div></div>
+      </div>`;
+    }).join('');
+  } else {
+    const next = all.find(c=> c.date>today);
+    if(next){
+      wrap.style.display = 'block';
+      list.innerHTML = `<div class="dbl-item" onclick="openBookDetail('${next.book.id}')">
+        ${coverHtml(next.book,'cover')}
+        <div><div class="dbl-title">${esc(next.book.title)}</div><div class="dbl-sub">🎯 próxima meta: ${next.percent}%${next.targetPage?` (pág. ${next.targetPage})`:''} até ${fmtDate(next.date)}</div></div>
+      </div>`;
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+}
+/* mostra os próximos livros da fila (status "quero-ler"), na ordem de prioridade da TBR */
+function renderUpcomingRead(){
+  const wrap = document.getElementById('upcomingReadSectionWrap');
+  const list = document.getElementById('upcomingReadList');
+  if(!wrap || !list) return;
+  const queue = DB.books.filter(b=> b.status==='quero-ler').sort((a,b)=>(a.priority||9999)-(b.priority||9999)).slice(0,6);
+  if(queue.length===0){ wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = queue.map(b=>`
+    <div class="book" onclick="openBookDetail('${b.id}')">
+      <div class="cover-wrap">${coverHtml(b,'cover')}</div>
+      <div class="book-title">${esc(b.title)}</div>
+      <div class="book-author">${esc(b.author)}</div>
+    </div>
+  `).join('');
+}
+
 /* ============ PLANEJAMENTO DE LEITURAS ============ */
 /* agora vive direto no cadastro do livro (planStart/planEnd/planMonth/planYear) */
 function renderPlansSection(){
@@ -1907,6 +2004,8 @@ function renderInicio(){
     }).join('');
   }
 
+  renderTodayGoal();
+  renderUpcomingRead();
   renderLentSection();
   renderPausedReminder();
   renderPlansSection();
@@ -2141,14 +2240,18 @@ function hashStr(s){
   for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; }
   return Math.abs(h);
 }
-let lastShelfList = null;
-function renderShelfView(list){
-  const el = document.getElementById('shelfView');
-  lastShelfList = list;
+/* estante de lombadas genérica — recebe o id do elemento alvo, pra poder ser usada
+   tanto na Biblioteca (shelfView) quanto na TBR (tbrShelfView) */
+let shelfViewState = {}; // elId -> lista atual (pra re-renderizar ao redimensionar a janela)
+function renderShelfViewInto(list, elId){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  shelfViewState[elId] = list;
   if(list.length===0){
     el.innerHTML = `<div class="empty-state"><div class="big">🪵</div>Nenhum livro para mostrar na estante.</div>`;
     return;
   }
+  const measureId = elId+'MeasureRow';
   const spineHtml = b=>{
     const h = hashStr(b.id);
     const height = 148 + (h % 55);
@@ -2159,12 +2262,12 @@ function renderShelfView(list){
   };
   // Renderiza tudo numa única fileira "de medição"; no próximo frame (antes do repaint)
   // reagrupamos em prateleiras conforme o espaço real — assim se adapta sozinho a qualquer tela.
-  el.innerHTML = `<div class="spine-row" id="shelfMeasureRow">${list.map(spineHtml).join('')}</div>`;
-  requestAnimationFrame(buildShelvesFromMeasure);
+  el.innerHTML = `<div class="spine-row" id="${measureId}">${list.map(spineHtml).join('')}</div>`;
+  requestAnimationFrame(()=> buildShelvesFromMeasureInto(elId, measureId));
 }
-function buildShelvesFromMeasure(){
-  const el = document.getElementById('shelfView');
-  const row = document.getElementById('shelfMeasureRow');
+function buildShelvesFromMeasureInto(elId, measureId){
+  const el = document.getElementById(elId);
+  const row = document.getElementById(measureId);
   if(!el || !row) return;
   const spines = Array.from(row.children);
   if(!spines.length) return;
@@ -2180,23 +2283,27 @@ function buildShelvesFromMeasure(){
     `<div class="shelf-tier"><div class="spine-row">${rowSpines.map(sp=>sp.outerHTML).join('')}</div><div class="shelf-ledge"></div></div>`
   ).join('');
 }
+function renderShelfView(list){ renderShelfViewInto(list, 'shelfView'); }
 let shelfResizeTimer;
 window.addEventListener('resize', ()=>{
   clearTimeout(shelfResizeTimer);
   shelfResizeTimer = setTimeout(()=>{
-    const sv = document.getElementById('shelfView');
-    if(sv && sv.style.display!=='none' && lastShelfList) renderShelfView(lastShelfList);
+    Object.keys(shelfViewState).forEach(elId=>{
+      const sv = document.getElementById(elId);
+      if(sv && sv.style.display!=='none' && shelfViewState[elId]) renderShelfViewInto(shelfViewState[elId], elId);
+    });
   }, 200);
 });
+function wishlistPriceNum(b){
+  const n = parseFloat((b.price||'').replace(/[^\d,.-]/g,'').replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
 function renderWishlistPage(){
   const grid = document.getElementById('wishlistStatGrid');
-  const el = document.getElementById('wishlistList');
+  const el = document.getElementById('wishlistGrid');
   if(!el) return;
   const items = DB.books.filter(b=> (b.price||'').trim());
-  const total = items.reduce((s,b)=>{
-    const n = parseFloat((b.price||'').replace(/[^\d,.-]/g,'').replace(',', '.'));
-    return s + (isNaN(n)?0:n);
-  }, 0);
+  const total = items.reduce((s,b)=> s+wishlistPriceNum(b), 0);
   if(grid){
     grid.innerHTML = `
       <div class="card stat-card"><div class="deco">🛍️</div><div class="num">${items.length}</div><div class="lbl">Itens na lista</div></div>
@@ -2204,16 +2311,32 @@ function renderWishlistPage(){
     `;
   }
   if(items.length===0){
-    el.innerHTML = `<div class="card empty-state"><div class="big">🛍️</div>Nenhum livro com preço cadastrado ainda.<br><span style="font-size:12px;">Adicione um "Preço estimado" no cadastro de qualquer livro pra ele aparecer aqui.</span></div>`;
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🛍️</div>Nenhum livro com preço cadastrado ainda.<br><span style="font-size:12px;">Adicione um "Preço estimado" no cadastro de qualquer livro pra ele aparecer aqui.</span></div>`;
     return;
   }
-  el.innerHTML = `<div class="card diary-lines">${items.map(b=>`
-    <div class="diary-line" onclick="openBookDetail('${b.id}')" style="cursor:pointer;">
-      ${coverHtml(b,'cover')}
-      <span class="diary-line-book" style="margin-left:8px;">${esc(b.title)}</span>
-      <span class="diary-line-meta">💰 ${esc(b.price)}${b.store?' · '+esc(b.store):''}</span>
+  const q = (document.getElementById('wishlistSearchBox')?.value||'').toLowerCase().trim();
+  const sortBy = document.getElementById('wishlistSortBy')?.value || 'recent';
+  let list = items;
+  if(q) list = list.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.store||'').toLowerCase().includes(q));
+  if(sortBy==='price-asc') list = [...list].sort((a,b)=> wishlistPriceNum(a)-wishlistPriceNum(b));
+  else if(sortBy==='price-desc') list = [...list].sort((a,b)=> wishlistPriceNum(b)-wishlistPriceNum(a));
+  else if(sortBy==='title') list = [...list].sort((a,b)=> a.title.localeCompare(b.title));
+  else if(sortBy==='store') list = [...list].sort((a,b)=> (a.store||'').localeCompare(b.store||''));
+  else list = [...list].sort((a,b)=> (b.dateAdded||0)-(a.dateAdded||0));
+
+  if(list.length===0){
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🔎</div>Nenhum item encontrado com "${esc(q)}".</div>`;
+    return;
+  }
+  el.innerHTML = list.map(b=>`
+    <div class="book" onclick="openBookDetail('${b.id}')">
+      <div class="cover-wrap">${coverHtml(b,'cover')}${b.favorite?'<span class="fav-badge">❤️</span>':''}${b.color?`<span class="color-dot" style="background:${b.color}"></span>`:''}</div>
+      <div class="book-title">${esc(b.title)}</div>
+      <div class="book-author">${esc(b.author)}</div>
+      <div class="dbl-sub" style="margin-top:4px;font-weight:700;color:var(--rosewood);">💰 ${esc(b.price)}</div>
+      ${b.store?`<div class="dbl-sub">🛍️ ${esc(b.store)}</div>`:''}
     </div>
-  `).join('')}</div>`;
+  `).join('');
 }
 let selectedTbrTab = 'none';
 let selectedGenreTab = null;
@@ -2259,6 +2382,13 @@ function switchTbrViewMode(mode){
 }
 function bookPlanLabel(b){
   return (b.planMonth!==null && b.planMonth!==undefined && b.planYear) ? `📅 ${MONTHS_PT[b.planMonth]} ${b.planYear}` : '🗂️ Sem mês';
+}
+/* mostra o planejamento de leitura do jeito mais específico que o livro já tiver:
+   início/fim planejados, senão mês/ano, senão nada (usado nas capas da TBR) */
+function bookPlanRangeLabel(b){
+  if(b.planStart) return `📅 ${fmtDate(b.planStart)}${(b.planEnd && b.planEnd!==b.planStart) ? ' – '+fmtDate(b.planEnd) : ''}`;
+  if(b.planMonth!==null && b.planMonth!==undefined && b.planYear) return `📅 ${MONTHS_PT[b.planMonth]} ${b.planYear}`;
+  return '';
 }
 function quickAssignGenre(bookId){
   const b = DB.books.find(x=>x.id===bookId);
@@ -2316,52 +2446,64 @@ function selectGenreTab(g){
   renderTbrTabs();
   renderTbrTabContent();
 }
+let tbrShelfMode = false;
 function renderTbrTabContent(){
-  const el = document.getElementById('tbrTabContent');
-  if(!el) return;
+  const grid = document.getElementById('tbrShelfGrid');
+  const shelfView = document.getElementById('tbrShelfView');
+  if(!grid || !shelfView) return;
+  const toggleBtn = document.getElementById('tbrShelfViewToggleBtn');
+  if(toggleBtn) toggleBtn.classList.toggle('chip-active', tbrShelfMode);
   const q = (document.getElementById('tbrSearchBox')?.value||'').toLowerCase().trim();
   let books = tbrViewMode==='mes' ? getCurrentTbrBooks() : getCurrentGenreBooks();
   if(q) books = books.filter(b=> b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
-  if(books.length===0){
-    el.innerHTML = q
-      ? `<div class="card empty-state"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
-      : (tbrViewMode==='mes'
-        ? (selectedTbrTab==='none'
-          ? `<div class="card empty-state"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
-          : `<div class="card empty-state"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`)
-        : (selectedGenreTab===null
-          ? `<div class="card empty-state"><div class="big">🗂️</div>Todos os seus livros da TBR já têm um gênero definido. 🌷</div>`
-          : `<div class="card empty-state"><div class="big">🏷️</div>Nenhum livro nesse gênero ainda.</div>`));
+
+  if(tbrShelfMode){
+    grid.style.display='none';
+    shelfView.style.display='block';
+    renderShelfViewInto(books, 'tbrShelfView');
     return;
   }
-  el.innerHTML = books.map((b,i)=>`
-    <div class="queue-item" draggable="true" data-id="${b.id}"
-      ondragstart="queueDragStart(event,'${b.id}')" ondragover="event.preventDefault()" ondrop="queueDrop(event,'${b.id}')">
-      <span class="queue-handle">⠿</span>
-      <span class="queue-num">${i+1}</span>
-      ${coverHtml(b,'cover')}
-      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openBookDetail('${b.id}')">
-        <div class="dbl-title">${esc(b.title)}${b.favorite?' ❤️':''}</div>
-        <div class="dbl-sub">${esc(b.author)}${b.price?' · '+esc(b.price):''}${b.store?' · '+esc(b.store):''}</div>
-        ${tbrViewMode==='genero' ? `<div class="dbl-sub" style="margin-top:2px;">${bookPlanLabel(b)}</div>` : ''}
+  grid.style.display='grid';
+  shelfView.style.display='none';
+
+  if(books.length===0){
+    grid.innerHTML = q
+      ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
+      : (tbrViewMode==='mes'
+        ? (selectedTbrTab==='none'
+          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
+          : `<div class="empty-state" style="grid-column:1/-1;"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`)
+        : (selectedGenreTab===null
+          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Todos os seus livros da TBR já têm um gênero definido. 🌷</div>`
+          : `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🏷️</div>Nenhum livro nesse gênero ainda.</div>`));
+    return;
+  }
+  grid.innerHTML = books.map((b,i)=>`
+    <div class="book tbr-book">
+      <div class="tbr-num-badge">${i+1}º</div>
+      <div class="cover-wrap" onclick="openBookDetail('${b.id}')" style="cursor:pointer;">
+        ${coverHtml(b,'cover')}${b.favorite?'<span class="fav-badge">❤️</span>':''}${b.color?`<span class="color-dot" style="background:${b.color}"></span>`:''}
       </div>
-      ${tbrViewMode==='genero' ? `<button class="btn btn-ghost btn-sm" title="Definir gênero" onclick="event.stopPropagation(); quickAssignGenre('${b.id}')">🏷️</button>` : ''}
-      <button class="btn btn-ghost btn-sm" title="Editar planejamento" onclick="event.stopPropagation(); openBookModal('${b.id}')">🗓️</button>
+      <div class="book-title" onclick="openBookDetail('${b.id}')" style="cursor:pointer;">${esc(b.title)}${b.favorite?' ❤️':''}</div>
+      <div class="book-author">${esc(b.author)}</div>
+      ${bookPlanRangeLabel(b) ? `<div class="dbl-sub" style="margin-top:2px;">${bookPlanRangeLabel(b)}</div>` : ''}
+      <div class="tbr-reorder">
+        <button title="Mover pra cima" onclick="moveTbrPriority('${b.id}',-1)" ${i===0?'disabled':''}>▲</button>
+        ${tbrViewMode==='genero' ? `<button title="Definir gênero" onclick="quickAssignGenre('${b.id}')">🏷️</button>` : ''}
+        <button title="Mover pra baixo" onclick="moveTbrPriority('${b.id}',1)" ${i===books.length-1?'disabled':''}>▼</button>
+      </div>
     </div>
   `).join('');
 }
-let dragQueueId = null;
-function queueDragStart(e,id){ dragQueueId=id; e.dataTransfer.effectAllowed='move'; }
-function queueDrop(e,targetId){
-  e.preventDefault();
-  if(!dragQueueId || dragQueueId===targetId) return;
+/* reordena a prioridade da TBR com um toque só (substitui o arrastar, que não funciona em telas de toque) */
+function moveTbrPriority(bookId, dir){
   const books = tbrViewMode==='mes' ? getCurrentTbrBooks() : getCurrentGenreBooks();
   const order = books.map(b=>b.id);
-  const fromIdx = order.indexOf(dragQueueId);
-  const toIdx = order.indexOf(targetId);
-  if(fromIdx===-1||toIdx===-1) return;
-  order.splice(fromIdx,1);
-  order.splice(toIdx,0,dragQueueId);
+  const idx = order.indexOf(bookId);
+  if(idx===-1) return;
+  const swapIdx = idx + dir;
+  if(swapIdx<0 || swapIdx>=order.length) return;
+  [order[idx], order[swapIdx]] = [order[swapIdx], order[idx]];
   order.forEach((id,i)=>{ const b=DB.books.find(x=>x.id===id); if(b) b.priority=i+1; });
   save();
   renderTbrTabContent();
@@ -2406,7 +2548,7 @@ function shareWishlist(){
     alert('Não consegui carregar a ferramenta de imagem — verifique sua conexão com a internet e tente de novo.');
     return;
   }
-  const el = document.getElementById('tbrTabContent');
+  const el = document.getElementById(tbrShelfMode ? 'tbrShelfView' : 'tbrShelfGrid');
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--blush').trim() || '#FBEAF0';
   html2canvas(el, { backgroundColor: bg, scale: 2 }).then(canvas=>{
     const link = document.createElement('a');
@@ -2796,12 +2938,27 @@ function renderBookDetail(b){
         <div class="detail-title" style="margin-top:16px;">${esc(b.title)}</div>
         <div class="detail-author">${esc(b.author)}</div>
         <div class="detail-badges">${badges.join('')}</div>
-        ${b.rating?`<div class="detail-stars">${starsHtml(b.rating)}</div>`:''}
         ${progressHtml}
         ${alerts}
         ${facts.length?`<div class="detail-facts" style="margin-top:18px;grid-template-columns:1fr 1fr;">${facts.map(([l,v])=>`<div><div class="detail-fact-label">${l}</div><div class="detail-fact-value">${v}</div></div>`).join('')}</div>`:''}
       </div>
       <div class="detail-right">
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">🗓️ Planejamento &amp; metas de progresso</div>
+          <div class="field" style="margin-bottom:16px;"><label>Avaliação</label>
+            <div class="detail-star-rating">${[1,2,3,4,5].map(v=>`<span data-v="${v}" class="${(b.rating||0)>=v?'on':''}" onclick="setDetailRating('${b.id}',${v})">⭐</span>`).join('')}</div>
+          </div>
+          <div class="grid2" style="margin-bottom:16px;">
+            <div class="field" style="margin-bottom:0;"><label>Início planejado</label><input type="date" value="${b.planStart||''}" onchange="updateDetailPlanField('${b.id}','planStart',this.value)"></div>
+            <div class="field" style="margin-bottom:0;"><label>Fim planejado</label><input type="date" value="${b.planEnd||''}" onchange="updateDetailPlanField('${b.id}','planEnd',this.value)"></div>
+          </div>
+          <div class="detail-section-label" style="margin-top:0;">🎯 Metas de progresso</div>
+          <div style="margin:8px 0 12px;">${detailCheckpointsHtml(b)}</div>
+          <div class="cp-actions">
+            <button type="button" class="btn btn-sage btn-sm" onclick="addDetailCheckpoint('${b.id}')">🎯 Adicionar meta</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="suggestDetailCheckpoints('${b.id}')">🌱 Sugerir 25/50/75/100%</button>
+          </div>
+        </div>
         ${(b.synopsis||b.thoughts||b.quote||(b.tags&&b.tags.length)||hist.length>1) ? `<div class="form-section">
           <div class="form-section-title">📝 Sobre o livro</div>
           ${b.synopsis?`<div class="detail-section-label" style="margin-top:0;">Sinopse</div><div class="detail-text">${esc(b.synopsis)}</div>`:''}
@@ -2817,6 +2974,83 @@ function renderBookDetail(b){
       </div>
     </div>
   `;
+}
+/* ---- edição direta na tela do livro (sem precisar abrir "Editar") ---- */
+function updateDetailPlanField(bookId, field, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b[field] = value;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function setDetailRating(bookId, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.rating = (b.rating===value) ? 0 : value;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function detailCheckpointsHtml(b){
+  const cps = (b.checkpoints||[]).map((c,i)=>({...c, i})).sort((a,c)=> new Date(a.date||0)-new Date(c.date||0));
+  if(cps.length===0) return `<div style="font-size:12px;color:var(--ink-soft);">Nenhuma meta ainda. Que tal definir uma? 🌱</div>`;
+  const today = localDateStr(new Date());
+  return cps.map(c=>{
+    const parts = [];
+    if(b.totalPages && c.percent>0) parts.push(`≈ pág. ${Math.round(b.totalPages*c.percent/100)}`);
+    if(b.totalPages && c.date && c.percent>0 && c.date<=today){
+      const actualPct = Math.round((pagesReadUpTo(b.id, c.date)/b.totalPages)*100);
+      parts.push(actualPct>=c.percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
+    }
+    return `<div class="checkpoint-row-card">
+      <div class="checkpoint-row">
+        <input type="date" value="${c.date||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'date',this.value)">
+        <div class="cp-pct-wrap"><input type="number" min="1" max="100" placeholder="%" value="${c.percent||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'percent',this.value)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+        <button type="button" class="cp-remove" onclick="removeDetailCheckpoint('${b.id}',${c.i})" title="Remover">✕</button>
+      </div>
+      <div class="cp-hint">${parts.join(' · ')}</div>
+    </div>`;
+  }).join('');
+}
+function addDetailCheckpoint(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  if(!Array.isArray(b.checkpoints)) b.checkpoints = [];
+  b.checkpoints.push({ date: localDateStr(new Date()), percent: 50 });
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function updateDetailCheckpoint(bookId, idx, field, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b || !b.checkpoints || !b.checkpoints[idx]) return;
+  b.checkpoints[idx][field] = field==='percent' ? (Number(value)||0) : value;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function removeDetailCheckpoint(bookId, idx){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b || !b.checkpoints) return;
+  b.checkpoints.splice(idx,1);
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function suggestDetailCheckpoints(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  if(!b.totalPages){ alert('Cadastre o total de páginas do livro primeiro, pra eu conseguir sugerir as metas. 📖'); return; }
+  const startStr = b.planStart || b.startDate || localDateStr(new Date());
+  const endStr = b.planEnd || b.finishDate || '';
+  const startD = new Date(startStr+'T00:00:00');
+  const endD = endStr ? new Date(endStr+'T00:00:00') : new Date(startD.getTime() + 30*24*60*60*1000);
+  const totalMs = Math.max(1, endD.getTime()-startD.getTime());
+  b.checkpoints = [25,50,75,100].map(pct=>({ date: localDateStr(new Date(startD.getTime()+totalMs*(pct/100))), percent: pct }));
+  save();
+  renderBookDetail(b);
+  renderAll();
 }
 function checkAutoComplete(b, date){
   if(!b.startDate){ b.startDate = date; }
@@ -2858,13 +3092,54 @@ let editingBookCameFromDetail = false;
 function addCheckpointRow(date, percent){
   const wrap = document.getElementById('bCheckpointsList');
   const row = document.createElement('div');
-  row.className = 'checkpoint-row';
+  row.className = 'checkpoint-row-card';
   row.innerHTML = `
-    <input type="date" class="cp-date" value="${date||''}">
-    <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
-    <button type="button" class="cp-remove" onclick="this.closest('.checkpoint-row').remove()" title="Remover">✕</button>
+    <div class="checkpoint-row">
+      <input type="date" class="cp-date" value="${date||''}" onchange="updateCheckpointHint(this)">
+      <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}" oninput="updateCheckpointHint(this)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+      <button type="button" class="cp-remove" onclick="this.closest('.checkpoint-row-card').remove()" title="Remover">✕</button>
+    </div>
+    <div class="cp-hint"></div>
   `;
   wrap.appendChild(row);
+  updateCheckpointHint(row.querySelector('.cp-pct'));
+}
+/* mostra, embaixo de cada meta, a página equivalente (com base no total de páginas) e,
+   pra livros já em andamento, se a meta já foi batida ou não até aquela data */
+function updateCheckpointHint(el){
+  const row = el.closest('.checkpoint-row-card');
+  if(!row) return;
+  const date = row.querySelector('.cp-date').value;
+  const percent = Number(row.querySelector('.cp-pct').value)||0;
+  const totalPages = Number(document.getElementById('bTotalPages').value)||0;
+  const bookId = document.getElementById('bookId').value;
+  const parts = [];
+  if(totalPages>0 && percent>0) parts.push(`≈ pág. ${Math.round(totalPages*percent/100)}`);
+  const today = localDateStr(new Date());
+  if(bookId && totalPages>0 && date && percent>0 && date<=today){
+    const actualPct = Math.round((pagesReadUpTo(bookId, date)/totalPages)*100);
+    parts.push(actualPct>=percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
+  }
+  row.querySelector('.cp-hint').innerHTML = parts.join(' · ');
+}
+function refreshAllCheckpointHints(){
+  document.querySelectorAll('#bCheckpointsList .cp-pct').forEach(el=> updateCheckpointHint(el));
+}
+/* preenche automaticamente 4 metas (25/50/75/100%) espalhadas entre o início e o fim planejados
+   (ou, na falta deles, entre hoje e +30 dias) — só precisa do total de páginas preenchido */
+function suggestCheckpoints(){
+  const totalPages = Number(document.getElementById('bTotalPages').value)||0;
+  if(!totalPages){ alert('Preencha o total de páginas primeiro, pra eu conseguir sugerir as metas. 📖'); return; }
+  const startStr = document.getElementById('bPlanStart').value || document.getElementById('bStartDate').value || localDateStr(new Date());
+  const endStr = document.getElementById('bPlanEnd').value || document.getElementById('bFinishDate').value || '';
+  const startD = new Date(startStr+'T00:00:00');
+  const endD = endStr ? new Date(endStr+'T00:00:00') : new Date(startD.getTime() + 30*24*60*60*1000);
+  const totalMs = Math.max(1, endD.getTime()-startD.getTime());
+  document.getElementById('bCheckpointsList').innerHTML = '';
+  [25,50,75,100].forEach(pct=>{
+    const d = new Date(startD.getTime() + totalMs*(pct/100));
+    addCheckpointRow(localDateStr(d), pct);
+  });
 }
 function renderCheckpointsList(checkpoints){
   const wrap = document.getElementById('bCheckpointsList');
@@ -2872,7 +3147,7 @@ function renderCheckpointsList(checkpoints){
   (checkpoints||[]).slice().sort((a,b)=> new Date(a.date)-new Date(b.date)).forEach(c=> addCheckpointRow(c.date, c.percent));
 }
 function collectCheckpointsFromForm(){
-  return Array.from(document.querySelectorAll('#bCheckpointsList .checkpoint-row')).map(row=>({
+  return Array.from(document.querySelectorAll('#bCheckpointsList .checkpoint-row-card')).map(row=>({
     date: row.querySelector('.cp-date').value,
     percent: Number(row.querySelector('.cp-pct').value)||0
   })).filter(c=> c.date && c.percent>0);
@@ -2882,6 +3157,23 @@ function collectCheckpointsFromForm(){
 function pagesReadUpTo(bookId, dateStr){
   return DB.logs.filter(l=> l.bookId===bookId && Number(l.pagesRead)>0 && l.date<=dateStr)
     .reduce((s,l)=> s+Number(l.pagesRead), 0);
+}
+/* junta as metas de progresso de TODOS os livros (não só de um dia), já com status calculado —
+   usada no painel "Metas de progresso" do diário e no "meta de hoje" da aba inicial */
+function getAllCheckpoints(){
+  const today = localDateStr(new Date());
+  const out = [];
+  DB.books.forEach(b=>{
+    (b.checkpoints||[]).forEach(c=>{
+      let state = 'future';
+      if(b.totalPages && c.date<=today){
+        const actualPct = Math.round((pagesReadUpTo(b.id, c.date)/b.totalPages)*100);
+        state = actualPct>=c.percent ? 'met' : 'missed';
+      }
+      out.push({ book:b, date:c.date, percent:c.percent, state, targetPage: b.totalPages ? Math.round(b.totalPages*c.percent/100) : null });
+    });
+  });
+  return out.sort((a,b)=> new Date(a.date)-new Date(b.date));
 }
 function getCheckpointsForDay(dateStr){
   const today = localDateStr(new Date());
@@ -3240,6 +3532,33 @@ function renderDiarioPage(){
   document.getElementById('dayCalWrap').style.display = calViewMode==='day' ? 'block' : 'none';
   renderCurrentCalView();
   renderDiaryHistory();
+  renderProgressGoalsPanel();
+}
+/* lista as metas atrasadas (não batidas) e as próximas metas de todos os livros */
+function renderProgressGoalsPanel(){
+  const wrap = document.getElementById('progressGoalsList');
+  if(!wrap) return;
+  const today = localDateStr(new Date());
+  const all = getAllCheckpoints();
+  if(all.length===0){
+    wrap.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="big">🎯</div>Nenhuma meta de progresso cadastrada ainda.<br><span style="font-size:12px;">Adicione metas ao cadastrar ou editar um livro, na seção "Metas de progresso". 🌱</span></div>`;
+    return;
+  }
+  const missed = all.filter(c=> c.state==='missed');
+  const upcoming = all.filter(c=> c.date>=today).slice(0,6);
+  const shown = [...missed, ...upcoming].slice(0,8);
+  if(shown.length===0){
+    wrap.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="big">🌸</div>Todas as metas em dia! Nenhuma pendência no momento.</div>`;
+    return;
+  }
+  wrap.innerHTML = shown.map(c=>{
+    const icon = c.state==='met' ? '✅' : (c.state==='missed' ? '⚑' : '🎯');
+    const statusTxt = c.state==='met' ? 'batida' : (c.state==='missed' ? 'não batida' : (c.date===today ? 'hoje' : 'até '+fmtDate(c.date)));
+    return `<div class="dbl-item" onclick="openBookDetail('${c.book.id}')">
+      ${coverHtml(c.book,'cover')}
+      <div><div class="dbl-title">${esc(c.book.title)}</div><div class="dbl-sub">${icon} chegar em ${c.percent}%${c.targetPage?` (pág. ${c.targetPage})`:''} · ${statusTxt}</div></div>
+    </div>`;
+  }).join('');
 }
 function renderDiaryHistory(){
   const searchTerm = (document.getElementById('diarySearchBox')?.value||'').trim().toLowerCase();

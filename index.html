@@ -1225,6 +1225,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
               <option value="abandonado">Abandonado</option>
             </select>
           </div>
+          <div class="field" id="mustReadRow">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;">
+              <input type="checkbox" id="bMustRead" style="width:auto;margin:0;accent-color:var(--rosewood);">
+              💖 Quero muito ler
+            </label>
+            <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Marcados aqui (e os que tiverem planejamento) aparecem em "Próximos a ler" na aba inicial.</div>
+          </div>
           <div class="field"><label>Avaliação</label>
             <div class="star-rating" id="starRating">
               <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
@@ -1929,21 +1936,46 @@ function renderTodayGoal(){
     }
   }
 }
-/* mostra os próximos livros da fila (status "quero-ler"), na ordem de prioridade da TBR */
+/* o select de status chamava essa função mas ela não existia — agora ela
+   mostra a opção "Quero muito ler" só quando o status é "Quero Ler" */
+function toggleDateFields(){
+  const row = document.getElementById('mustReadRow');
+  if(row) row.style.display = document.getElementById('bStatus').value==='quero-ler' ? 'block' : 'none';
+}
+/* data de referência do planejamento de um livro (início planejado, senão 1º dia do mês/ano), ou null */
+function bookPlanSortKey(b){
+  if(b.planStart) return b.planStart;
+  if(b.planMonth!==null && b.planMonth!==undefined && b.planYear) return `${b.planYear}-${String(b.planMonth+1).padStart(2,'0')}-01`;
+  return null;
+}
+/* mostra os próximos livros: os marcados como "Quero muito ler" + os que têm planejamento.
+   Planejados vêm primeiro (pela data mais próxima); depois os "quero muito ler" na ordem de prioridade da TBR */
 function renderUpcomingRead(){
   const wrap = document.getElementById('upcomingReadSectionWrap');
   const list = document.getElementById('upcomingReadList');
   if(!wrap || !list) return;
-  const queue = DB.books.filter(b=> b.status==='quero-ler').sort((a,b)=>(a.priority||9999)-(b.priority||9999)).slice(0,6);
+  const queue = DB.books
+    .filter(b=> b.status==='quero-ler' && (b.mustRead || bookPlanSortKey(b)))
+    .sort((a,b)=>{
+      const ka = bookPlanSortKey(a), kb = bookPlanSortKey(b);
+      if(ka && kb) return ka.localeCompare(kb) || (a.priority||9999)-(b.priority||9999);
+      if(ka) return -1;
+      if(kb) return 1;
+      return (a.priority||9999)-(b.priority||9999);
+    });
   if(queue.length===0){ wrap.style.display='none'; return; }
   wrap.style.display = 'block';
-  list.innerHTML = queue.map(b=>`
+  list.innerHTML = queue.map(b=>{
+    const plan = bookPlanRangeLabel(b);
+    const tag = plan || (b.mustRead ? '💖 Quero muito ler' : '');
+    return `
     <div class="book" onclick="openBookDetail('${b.id}')">
       <div class="cover-wrap">${coverHtml(b,'cover')}</div>
       <div class="book-title">${esc(b.title)}</div>
       <div class="book-author">${esc(b.author)}</div>
-    </div>
-  `).join('');
+      ${tag?`<div style="font-size:11px;color:var(--ink-soft);margin-top:3px;">${tag}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 /* ============ PLANEJAMENTO DE LEITURAS ============ */
@@ -3268,6 +3300,7 @@ function openBookModal(id){
     document.getElementById('bTotalPages').value = b.totalPages||'';
     document.getElementById('bCurrentPage').value = b.currentPage||'';
     document.getElementById('bStatus').value = b.status||'quero-ler';
+    document.getElementById('bMustRead').checked = !!b.mustRead;
     document.getElementById('bStartDate').value = b.startDate||'';
     document.getElementById('bFinishDate').value = b.finishDate||'';
     document.getElementById('bSynopsis').value = b.synopsis||'';
@@ -3327,6 +3360,7 @@ function openBookModal(id){
     document.getElementById('bCheckpointsList').innerHTML = '';
     document.getElementById('bFormat').value='Físico';
     document.getElementById('bStatus').value='quero-ler';
+    document.getElementById('bMustRead').checked = false;
     document.getElementById('rereadRow').style.display='none';
     document.getElementById('lentReturnRow').style.display='none';
     document.getElementById('finishEstimateInfo').textContent='';
@@ -3338,6 +3372,7 @@ function openBookModal(id){
     renderBookGoalsChallengesPicker(null);
   }
   paintRating();
+  toggleDateFields();
   document.getElementById('bookModalOverlay').classList.add('open');
 }
 function markReread(){
@@ -3420,6 +3455,7 @@ function saveBook(){
     language: document.getElementById('bLanguage').value,
     format: document.getElementById('bFormat').value,
     totalPages, currentPage, status,
+    mustRead: status==='quero-ler' && document.getElementById('bMustRead').checked,
     rating: selectedRating,
     favorite: selectedFavorite,
     color: selectedColor,

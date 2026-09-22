@@ -272,13 +272,28 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .period-bar-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.25);}
 .period-bar-sub{font-size:9px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .period-bar-planned{background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px);}
-.checkpoint-row-card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:9px 10px;margin-bottom:10px;}
+.checkpoint-row-card{position:relative;background:linear-gradient(135deg,#fff 0%,var(--blush) 100%);border:1.5px solid var(--blush-deep);border-radius:18px;padding:11px 12px 10px 14px;margin-bottom:10px;box-shadow:var(--shadow-sm);overflow:hidden;transition:.15s;}
+.checkpoint-row-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--petal),var(--sage-deep));}
+.checkpoint-row-card:hover{box-shadow:0 5px 14px rgba(173,86,120,.14);}
+.checkpoint-row-card.cp-state-met{background:linear-gradient(135deg,#fff 0%,#EEF5EA 100%);border-color:var(--sage);}
+.checkpoint-row-card.cp-state-met::before{background:var(--sage-deep);}
 .checkpoint-row{display:flex;align-items:center;gap:8px;}
-.checkpoint-row input[type="date"]{flex:1.3;min-width:0;}
-.checkpoint-row .cp-pct-wrap{flex:1;display:flex;align-items:center;gap:4px;}
-.checkpoint-row .cp-pct-wrap input{width:100%;}
-.checkpoint-row .cp-remove{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:none;border:none;color:var(--ink-soft);font-size:15px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;}
-.checkpoint-row .cp-remove:hover{color:var(--rosewood);background:var(--blush-deep);}
+.checkpoint-row input{font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;color:var(--rosewood);background:#fff;border:1.5px solid var(--blush-deep);border-radius:999px;padding:7px 12px;outline:none;min-width:0;transition:.15s;}
+.checkpoint-row input:focus{border-color:var(--petal);box-shadow:0 0 0 3px rgba(239,160,195,.25);}
+.checkpoint-row input[type="date"]{flex:1.4;}
+.checkpoint-row input[type="date"]::-webkit-calendar-picker-indicator{opacity:.55;cursor:pointer;}
+.checkpoint-row .cp-pct-wrap{flex:1;display:flex;align-items:center;position:relative;min-width:0;}
+.checkpoint-row .cp-pct-wrap input{width:100%;padding-right:28px;text-align:center;-moz-appearance:textfield;}
+.checkpoint-row .cp-pct-wrap input::-webkit-outer-spin-button,.checkpoint-row .cp-pct-wrap input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.checkpoint-row .cp-pct-wrap .cp-pct-sign{position:absolute;right:11px;font-size:12px;font-weight:700;color:var(--petal-deep);pointer-events:none;}
+.checkpoint-row .cp-remove{flex-shrink:0;width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px solid var(--blush-deep);color:var(--petal-deep);font-size:12px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.checkpoint-row .cp-remove:hover{color:#fff;background:var(--petal);border-color:var(--petal);transform:rotate(90deg);}
+.cp-mini-track{height:6px;border-radius:10px;background:#fff;border:1px solid var(--blush-deep);margin:9px 2px 0;overflow:hidden;}
+.cp-mini-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--petal),var(--sage-deep));transition:width .25s;}
+.cp-hint .cp-pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:700;margin-left:2px;}
+.cp-hint .cp-badge-met{background:#E3EFDD;color:var(--moss);}
+.cp-hint .cp-badge-missed{background:var(--blush-deep);color:var(--rosewood);}
+.cp-hint .cp-badge-today{background:#FDF3E0;color:#A67A2E;}
 .cp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
 .detail-star-rating{display:flex;gap:5px;font-size:24px;margin-top:2px;}
 .detail-star-rating span{cursor:pointer;opacity:.3;transition:.12s;}
@@ -3045,17 +3060,18 @@ function detailCheckpointsHtml(b){
   const today = localDateStr(new Date());
   return cps.map(c=>{
     const parts = [];
-    if(b.totalPages && c.percent>0) parts.push(`≈ pág. ${Math.round(b.totalPages*c.percent/100)}`);
-    if(b.totalPages && c.date && c.percent>0 && c.date<=today){
-      const actualPct = Math.round((pagesReadUpTo(b.id, c.date)/b.totalPages)*100);
-      parts.push(actualPct>=c.percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
-    }
-    return `<div class="checkpoint-row-card">
+    if(b.totalPages && c.percent>0) parts.push(`📖 ≈ pág. ${Math.round(b.totalPages*c.percent/100)}`);
+    const state = checkpointState(b.id, b.totalPages, c.date, c.percent);
+    const badge = checkpointBadgeHtml(state);
+    if(badge) parts.push(badge);
+    const pctW = Math.max(0, Math.min(100, Number(c.percent)||0));
+    return `<div class="checkpoint-row-card ${state==='met'?'cp-state-met':''}">
       <div class="checkpoint-row">
         <input type="date" value="${c.date||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'date',this.value)">
-        <div class="cp-pct-wrap"><input type="number" min="1" max="100" placeholder="%" value="${c.percent||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'percent',this.value)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+        <div class="cp-pct-wrap"><input type="number" min="1" max="100" placeholder="%" value="${c.percent||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'percent',this.value)"><span class="cp-pct-sign">%</span></div>
         <button type="button" class="cp-remove" onclick="removeDetailCheckpoint('${b.id}',${c.i})" title="Remover">✕</button>
       </div>
+      <div class="cp-mini-track"><div class="cp-mini-fill" style="width:${pctW}%"></div></div>
       <div class="cp-hint">${parts.join(' · ')}</div>
     </div>`;
   }).join('');
@@ -3177,9 +3193,10 @@ function addCheckpointRow(date, percent){
   row.innerHTML = `
     <div class="checkpoint-row">
       <input type="date" class="cp-date" value="${date||''}" onchange="updateCheckpointHint(this)">
-      <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}" oninput="updateCheckpointHint(this)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+      <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}" oninput="updateCheckpointHint(this)"><span class="cp-pct-sign">%</span></div>
       <button type="button" class="cp-remove" onclick="this.closest('.checkpoint-row-card').remove()" title="Remover">✕</button>
     </div>
+    <div class="cp-mini-track"><div class="cp-mini-fill" style="width:0%"></div></div>
     <div class="cp-hint"></div>
   `;
   wrap.appendChild(row);
@@ -3195,12 +3212,13 @@ function updateCheckpointHint(el){
   const totalPages = Number(document.getElementById('bTotalPages').value)||0;
   const bookId = document.getElementById('bookId').value;
   const parts = [];
-  if(totalPages>0 && percent>0) parts.push(`≈ pág. ${Math.round(totalPages*percent/100)}`);
-  const today = localDateStr(new Date());
-  if(bookId && totalPages>0 && date && percent>0 && date<=today){
-    const actualPct = Math.round((pagesReadUpTo(bookId, date)/totalPages)*100);
-    parts.push(actualPct>=percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
-  }
+  if(totalPages>0 && percent>0) parts.push(`📖 ≈ pág. ${Math.round(totalPages*percent/100)}`);
+  const state = bookId ? checkpointState(bookId, totalPages, date, percent) : 'future';
+  const badge = checkpointBadgeHtml(state);
+  if(badge) parts.push(badge);
+  row.classList.toggle('cp-state-met', state==='met');
+  const fill = row.querySelector('.cp-mini-fill');
+  if(fill) fill.style.width = Math.max(0, Math.min(100, percent))+'%';
   row.querySelector('.cp-hint').innerHTML = parts.join(' · ');
 }
 function refreshAllCheckpointHints(){
@@ -3235,6 +3253,21 @@ function collectCheckpointsFromForm(){
 }
 /* soma as páginas lidas (via logs) de um livro até uma data (inclusive) — usado pra saber
    se uma meta de progresso ("chegar em X% até tal dia") foi batida ou não. */
+/* estado de uma meta: 'met' (batida), 'missed' (data já passou e não bateu),
+   'today' (é hoje e ainda não bateu — o dia não acabou) ou 'future' */
+function checkpointState(bookId, totalPages, dateStr, percent){
+  const today = localDateStr(new Date());
+  if(!totalPages || !dateStr || !percent || dateStr>today) return 'future';
+  const actualPct = Math.round((pagesReadUpTo(bookId, dateStr)/totalPages)*100);
+  if(actualPct>=percent) return 'met';
+  return dateStr===today ? 'today' : 'missed';
+}
+function checkpointBadgeHtml(state){
+  if(state==='met') return '<span class="cp-pill cp-badge-met">🌸 meta batida!</span>';
+  if(state==='missed') return '<span class="cp-pill cp-badge-missed">🥀 não deu dessa vez</span>';
+  if(state==='today') return '<span class="cp-pill cp-badge-today">🌷 é hoje!</span>';
+  return '';
+}
 function pagesReadUpTo(bookId, dateStr){
   return DB.logs.filter(l=> l.bookId===bookId && Number(l.pagesRead)>0 && l.date<=dateStr)
     .reduce((s,l)=> s+Number(l.pagesRead), 0);
@@ -3246,11 +3279,7 @@ function getAllCheckpoints(){
   const out = [];
   DB.books.forEach(b=>{
     (b.checkpoints||[]).forEach(c=>{
-      let state = 'future';
-      if(b.totalPages && c.date<=today){
-        const actualPct = Math.round((pagesReadUpTo(b.id, c.date)/b.totalPages)*100);
-        state = actualPct>=c.percent ? 'met' : 'missed';
-      }
+      const state = checkpointState(b.id, b.totalPages, c.date, c.percent);
       out.push({ book:b, date:c.date, percent:c.percent, state, targetPage: b.totalPages ? Math.round(b.totalPages*c.percent/100) : null });
     });
   });
@@ -3262,11 +3291,7 @@ function getCheckpointsForDay(dateStr){
   DB.books.forEach(b=>{
     (b.checkpoints||[]).forEach(c=>{
       if(c.date!==dateStr) return;
-      let state = 'future'; // future | met | missed
-      if(b.totalPages){
-        const actualPct = Math.round((pagesReadUpTo(b.id, dateStr)/b.totalPages)*100);
-        if(dateStr<=today){ state = actualPct>=c.percent ? 'met' : 'missed'; }
-      }
+      const state = checkpointState(b.id, b.totalPages, dateStr, c.percent); // future | today | met | missed
       out.push({ bookId:b.id, title:b.title, percent:c.percent, color:b.color, state });
     });
   });
@@ -3873,9 +3898,15 @@ function getReadingPeriodsForMonth(year, month){
       end = new Date(b.finishDate+'T00:00:00');
       start = b.startDate ? new Date(b.startDate+'T00:00:00') : end;
       if(start>end) start = end;
-    } else if(b.status==='lendo' && b.startDate){
-      start = new Date(b.startDate+'T00:00:00');
-      end = new Date();
+    } else if(b.status==='lendo' && (b.startDate || b.planStart)){
+      // a barra vai do início até o que vier por último: hoje, o fim planejado ou a última meta de progresso
+      start = new Date((b.startDate || b.planStart)+'T00:00:00');
+      const todayD = new Date(); todayD.setHours(0,0,0,0);
+      const ends = [todayD];
+      if(b.planEnd) ends.push(new Date(b.planEnd+'T00:00:00'));
+      (b.checkpoints||[]).forEach(c=>{ if(c.date) ends.push(new Date(c.date+'T00:00:00')); });
+      end = new Date(Math.max(...ends.map(d=>d.getTime())));
+      if(start>end) end = start;
     }
     if(start && end && start<=monthEnd && end>=monthStart){
       periods.push({ bookId:b.id, title:b.title, start, end, color:b.color, status:STATUS_LABEL[b.status]||'', kind:'read' });
@@ -3920,7 +3951,7 @@ function renderPeriodCalendar(){
         const cps = getCheckpointsForDay(localDateStr(new Date(calYear, calMonth, dayNum)));
         const cpHtml = cps.length ? `<div class="cp-badges">${cps.map(c=>{
           const icon = c.state==='met' ? '✓' : (c.state==='missed' ? '⚑' : '🎯');
-          return `<span class="cp-badge ${c.state==='met'?'cp-met':''} ${c.state==='missed'?'cp-missed':''}" style="background:${c.color||'var(--rosewood)'}" data-tooltip="${esc(c.title)} — meta de ${c.percent}%${c.state==='met'?' · batida ✓':(c.state==='missed'?' · não batida':'')}" onclick="event.stopPropagation();openBookDetail('${c.bookId}')">${icon} ${c.percent}%</span>`;
+          return `<span class="cp-badge ${c.state==='met'?'cp-met':''} ${c.state==='missed'?'cp-missed':''}" style="background:${c.color||'var(--rosewood)'}" data-tooltip="${esc(c.title)} — meta de ${c.percent}%${c.state==='met'?' · batida ✓':(c.state==='missed'?' · não batida':(c.state==='today'?' · é hoje':''))}" onclick="event.stopPropagation();openBookDetail('${c.bookId}')">${icon} ${c.percent}%</span>`;
         }).join('')}</div>` : '';
         dayNumHtml += `<div class="period-day-num" style="grid-column:${c+1};grid-row:1;">${dayNum}${cpHtml}</div>`;
       }

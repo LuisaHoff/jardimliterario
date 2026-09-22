@@ -3371,10 +3371,24 @@ function saveBook(){
   const finishDate = document.getElementById('bFinishDate').value;
 
   const completions = existing ? (existing.completions||[]).slice() : [];
+  const wasAlreadyLido = !!(existing && existing.status==='lido');
   if(status==='lido' && finishDate){
     const last = completions[completions.length-1];
-    if(!last || last.date !== finishDate){ completions.push({date:finishDate, rating:selectedRating}); }
-    else { last.rating = selectedRating; }
+    if(!last){
+      completions.push({date:finishDate, rating:selectedRating});
+    } else if(last.date !== finishDate){
+      if(wasAlreadyLido){
+        // o livro já estava "lido" antes desse salvamento — isso é uma CORREÇÃO da data/nota
+        // da mesma conclusão, não uma releitura nova. Atualiza em vez de duplicar.
+        last.date = finishDate;
+        last.rating = selectedRating;
+      } else {
+        // estava em outro status (lendo, quero-ler etc.) e virou "lido" agora — conclusão nova de fato.
+        completions.push({date:finishDate, rating:selectedRating});
+      }
+    } else {
+      last.rating = selectedRating;
+    }
   } else if(existing && existing.status==='lido' && existing.finishDate){
     // status just moved away from "lido" — the completion tied to the old finishDate was
     // created by that "lido" state and no longer reflects reality, so drop just that one

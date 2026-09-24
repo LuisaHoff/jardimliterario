@@ -219,6 +219,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .badge-lendo{background:#EAF3E5;color:var(--moss);}
 .badge-lido{background:#F5E4EE;color:var(--rosewood);}
 .badge-quero-ler{background:#FDF3E0;color:#A67A2E;}
+.badge-quero-muito-ler{background:#FDE4EC;color:var(--rosewood);}
 .badge-pausado{background:#EFEFEF;color:#888;}
 .badge-abandonado{background:#FBE7E7;color:#B85454;}
 .lent-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:5px;background:#FDF3E0;color:#A67A2E;}
@@ -832,6 +833,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <select id="filterStatus" onchange="renderEstante()">
           <option value="">Todos os status</option>
           <option value="quero-ler">Quero Ler</option>
+              <option value="quero-muito-ler">Quero Muito Ler</option>
           <option value="lendo">Lendo</option>
           <option value="lido">Lido</option>
           <option value="pausado">Pausado</option>
@@ -861,7 +863,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-sage" onclick="suggestNextRead()">🎲 Sortear próxima leitura</button>
           <button class="btn btn-ghost" onclick="shareWishlist()">📥 Baixar lista</button>
-          <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo livro</button>
+          <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-muito-ler';">+ Novo livro</button>
         </div>
       </div>
       <div class="vine-divider"></div>
@@ -1225,6 +1227,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
           <div class="field"><label>Status</label>
             <select id="bStatus" onchange="toggleDateFields()">
               <option value="quero-ler">Quero Ler</option>
+              <option value="quero-muito-ler">Quero Muito Ler</option>
               <option value="lendo">Lendo</option>
               <option value="lido">Lido</option>
               <option value="pausado">Pausado</option>
@@ -1702,7 +1705,7 @@ function migrateData(){
     if(b.planMonth===undefined) b.planMonth = null;
     if(b.planYear===undefined) b.planYear = null;
     if(!Array.isArray(b.checkpoints)) b.checkpoints = [];
-    if(b.status==='quero-ler' && !b.priority){ b.priority = nextPriority++; }
+    if((b.status==='quero-ler' || b.status==='quero-muito-ler') && !b.priority){ b.priority = nextPriority++; }
   });
   // planejamento migrou pra dentro do cadastro do livro (planStart/planEnd/planMonth/planYear) —
   // traz o que existia nos sistemas antigos (DB.plans e DB.monthlyTbrs) pra lá, sem duplicar.
@@ -1779,7 +1782,7 @@ function openThemeModal(){
 }
 applyTheme(DB.settings.theme, true);
 
-const STATUS_LABEL = {'quero-ler':'Quero Ler','lendo':'Lendo','lido':'Lido','pausado':'Pausado','abandonado':'Abandonado'};
+const STATUS_LABEL = {'quero-ler':'Quero Ler','quero-muito-ler':'Quero Muito Ler','lendo':'Lendo','lido':'Lido','pausado':'Pausado','abandonado':'Abandonado'};
 const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function localDateStr(d){
   // pega ano/mês/dia no horário local (não em UTC), evitando o "dia adiantado" perto da meia-noite
@@ -1940,7 +1943,7 @@ function renderUpcomingRead(){
   const wrap = document.getElementById('upcomingReadSectionWrap');
   const list = document.getElementById('upcomingReadList');
   if(!wrap || !list) return;
-  const queue = DB.books.filter(b=> b.status==='quero-ler').sort((a,b)=>(a.priority||9999)-(b.priority||9999)).slice(0,6);
+  const queue = DB.books.filter(b=> b.status==='quero-muito-ler').sort((a,b)=>(a.priority||9999)-(b.priority||9999)).slice(0,6);
   if(queue.length===0){ wrap.style.display='none'; return; }
   wrap.style.display = 'block';
   list.innerHTML = queue.map(b=>`
@@ -2351,7 +2354,7 @@ function renderWishlistPage(){
 let selectedTbrTab = 'none';
 let selectedGenreTab = null;
 function getCurrentGenreBooks(){
-  const wishlist = DB.books.filter(b=>b.status==='quero-ler');
+  const wishlist = DB.books.filter(b=>b.status==='quero-muito-ler');
   const filtered = selectedGenreTab===null
     ? wishlist.filter(b=>!(b.genre||'').trim())
     : wishlist.filter(b=>(b.genre||'').trim()===selectedGenreTab);
@@ -2361,7 +2364,7 @@ function tbrTabKey(year, month){ return year+'-'+month; }
 function getTbrMonthGroups(){
   const map = new Map();
   DB.books.forEach(b=>{
-    if(b.status==='quero-ler' && b.planMonth!==null && b.planMonth!==undefined && b.planYear){
+    if(b.status==='quero-muito-ler' && b.planMonth!==null && b.planMonth!==undefined && b.planYear){
       const key = tbrTabKey(b.planYear, b.planMonth);
       if(!map.has(key)) map.set(key, { year:b.planYear, month:b.planMonth, bookIds:[] });
       map.get(key).bookIds.push(b.id);
@@ -2371,10 +2374,10 @@ function getTbrMonthGroups(){
 }
 function getCurrentTbrBooks(){
   if(selectedTbrTab==='none'){
-    return DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
+    return DB.books.filter(b=>b.status==='quero-muito-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
   }
   const [year, month] = selectedTbrTab.split('-').map(Number);
-  return DB.books.filter(b=>b.status==='quero-ler' && b.planMonth===month && b.planYear===year).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
+  return DB.books.filter(b=>b.status==='quero-muito-ler' && b.planMonth===month && b.planYear===year).sort((a,b)=>(a.priority||9999)-(b.priority||9999));
 }
 let tbrViewMode = 'mes'; // 'mes' | 'genero'
 function switchTbrViewMode(mode){
@@ -2428,7 +2431,7 @@ function renderTbrTabs(){
   if(!el) return;
   if(tbrViewMode==='mes'){
     const groups = getTbrMonthGroups();
-    const noneCount = DB.books.filter(b=>b.status==='quero-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).length;
+    const noneCount = DB.books.filter(b=>b.status==='quero-muito-ler' && (b.planMonth===null||b.planMonth===undefined||!b.planYear)).length;
     if(selectedTbrTab!=='none' && !groups.some(g=>tbrTabKey(g.year,g.month)===selectedTbrTab)) selectedTbrTab='none';
     let html = `<button class="tbr-tab ${selectedTbrTab==='none'?'active':''}" onclick="selectTbrTab('none')">🗂️ Sem mês <span class="tbr-tab-count">${noneCount}</span></button>`;
     html += groups.map(g=>{
@@ -2437,7 +2440,7 @@ function renderTbrTabs(){
     }).join('');
     el.innerHTML = html;
   } else {
-    const wishlist = DB.books.filter(b=>b.status==='quero-ler');
+    const wishlist = DB.books.filter(b=>b.status==='quero-muito-ler');
     const genres = [...new Set(wishlist.map(b=>(b.genre||'').trim()).filter(Boolean))].sort();
     const noneCount = wishlist.filter(b=>!(b.genre||'').trim()).length;
     if(selectedGenreTab!==null && !genres.includes(selectedGenreTab)) selectedGenreTab = null;
@@ -2481,7 +2484,7 @@ function renderTbrTabContent(){
       ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
       : (tbrViewMode==='mes'
         ? (selectedTbrTab==='none'
-          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">Adicionar um livro</button></div>`
+          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-muito-ler';">Adicionar um livro</button></div>`
           : `<div class="empty-state" style="grid-column:1/-1;"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`)
         : (selectedGenreTab===null
           ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Todos os seus livros da TBR já têm um gênero definido. 🌷</div>`
@@ -2521,7 +2524,7 @@ function moveTbrPriority(bookId, dir){
 
 /* ============ SUGESTÃO DE PRÓXIMA LEITURA ============ */
 function suggestNextRead(){
-  const wishlist = DB.books.filter(b=>b.status==='quero-ler');
+  const wishlist = DB.books.filter(b=>b.status==='quero-muito-ler');
   if(wishlist.length===0){
     document.getElementById('suggestContent').innerHTML = `<div class="empty-state"><div class="big">🎁</div>Sua lista de desejos está vazia.</div>`;
     document.getElementById('suggestStartBtn').style.display='none';
@@ -2872,10 +2875,7 @@ function renderBookDetail(b){
   if(b.genre) facts.push(['Gênero', esc(b.genre)]);
   if(b.language) facts.push(['Idioma', esc(b.language)]);
   if(b.format) facts.push(['Formato', esc(b.format)]);
-  if(b.totalPages) facts.push(['Páginas', b.totalPages]);
   if(b.saga) facts.push(['Saga', esc(b.saga) + (b.sagaOrder?` · #${b.sagaOrder}`:'')]);
-  if(b.startDate) facts.push(['Início', fmtDate(b.startDate)]);
-  if(b.finishDate) facts.push(['Conclusão', fmtDate(b.finishDate)]);
   if(b.price) facts.push(['Preço', esc(b.price)]);
   if(b.store) facts.push(['Onde comprar', esc(b.store)]);
 
@@ -2954,10 +2954,26 @@ function renderBookDetail(b){
       </div>
       <div class="detail-right">
         <div class="form-section form-section-featured">
-          <div class="form-section-title">🗓️ Planejamento &amp; metas de progresso</div>
+          <div class="form-section-title">📊 Progresso de leitura</div>
+          <div class="grid2" style="margin-bottom:16px;">
+            <div class="field" style="margin-bottom:0;"><label>Total de páginas</label><input type="number" min="1" id="detailTotalPages" value="${b.totalPages||''}" oninput="document.getElementById('detailCurrentPage').max=this.value;" onchange="updateDetailProgressField('${b.id}','totalPages',this.value)"></div>
+            <div class="field" style="margin-bottom:0;"><label>Página atual</label><input type="number" min="0" id="detailCurrentPage" max="${b.totalPages||''}" value="${b.currentPage||''}" onchange="updateDetailProgressField('${b.id}','currentPage',this.value)"></div>
+          </div>
+          <div class="field" style="margin-bottom:16px;"><label>Status</label>
+            <select onchange="updateDetailStatus('${b.id}', this.value)">
+              ${Object.entries(STATUS_LABEL).map(([val,label])=>`<option value="${val}" ${b.status===val?'selected':''}>${esc(label)}</option>`).join('')}
+            </select>
+          </div>
           <div class="field" style="margin-bottom:16px;"><label>Avaliação</label>
             <div class="detail-star-rating">${[1,2,3,4,5].map(v=>`<span data-v="${v}" class="${(b.rating||0)>=v?'on':''}" onclick="setDetailRating('${b.id}',${v})">⭐</span>`).join('')}</div>
           </div>
+          <div class="grid2" style="margin-bottom:0;">
+            <div class="field" style="margin-bottom:0;"><label>Data de início</label><input type="date" value="${b.startDate||''}" onchange="updateDetailPlanField('${b.id}','startDate',this.value)"></div>
+            <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" value="${b.finishDate||''}" onchange="updateDetailFinishDate('${b.id}',this.value)"></div>
+          </div>
+        </div>
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">🗓️ Planejamento &amp; metas de progresso</div>
           <div class="grid2" style="margin-bottom:16px;">
             <div class="field" style="margin-bottom:0;"><label>Início planejado</label><input type="date" value="${b.planStart||''}" onchange="updateDetailPlanField('${b.id}','planStart',this.value)"></div>
             <div class="field" style="margin-bottom:0;"><label>Fim planejado</label><input type="date" value="${b.planEnd||''}" onchange="updateDetailPlanField('${b.id}','planEnd',this.value)"></div>
@@ -2969,6 +2985,14 @@ function renderBookDetail(b){
             <button type="button" class="btn btn-ghost btn-sm" onclick="suggestDetailCheckpoints('${b.id}')">🌱 Sugerir 25/50/75/100%</button>
           </div>
         </div>
+        ${(b.synopsis||b.thoughts||b.quote||(b.tags&&b.tags.length)||hist.length>1) ? `<div class="form-section">
+          <div class="form-section-title">📝 Sobre o livro</div>
+          ${b.synopsis?`<div class="detail-section-label" style="margin-top:0;">Sinopse</div><div class="detail-text">${esc(b.synopsis)}</div>`:''}
+          ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
+          ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
+          ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
+          ${hist.length>1?`<div class="detail-section-label">Releituras</div><div class="detail-text">Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}</div>`:''}
+        </div>` : ''}
         <div class="form-section form-section-featured">
           <div class="form-section-title">💰 Acompanhamento de preço</div>
           <div style="font-size:11px;color:var(--ink-soft);margin-bottom:12px;">Registre os preços que for vendo por aí pra acompanhar promoções. 🏷️</div>
@@ -2980,14 +3004,6 @@ function renderBookDetail(b){
           </div>
           <div id="priceHistoryList">${priceHistoryHtml(b)}</div>
         </div>
-        ${(b.synopsis||b.thoughts||b.quote||(b.tags&&b.tags.length)||hist.length>1) ? `<div class="form-section">
-          <div class="form-section-title">📝 Sobre o livro</div>
-          ${b.synopsis?`<div class="detail-section-label" style="margin-top:0;">Sinopse</div><div class="detail-text">${esc(b.synopsis)}</div>`:''}
-          ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
-          ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
-          ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
-          ${hist.length>1?`<div class="detail-section-label">Releituras</div><div class="detail-text">Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}</div>`:''}
-        </div>` : ''}
         <div class="form-section">
           <div class="form-section-title">📅 Histórico de leitura</div>
           ${readingLogHtml}
@@ -2997,6 +3013,52 @@ function renderBookDetail(b){
   `;
 }
 /* ---- edição direta na tela do livro (sem precisar abrir "Editar") ---- */
+function updateDetailProgressField(bookId, field, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b[field] = Number(value)||0;
+  if(b.totalPages>0 && b.currentPage>b.totalPages) b.currentPage = b.totalPages;
+  checkAutoComplete(b, localDateStr(new Date()));
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function updateDetailStatus(bookId, newStatus){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  const wasLido = b.status==='lido';
+  if(newStatus==='lido' && !wasLido){
+    // virou "lido" agora — conclusão nova de fato
+    if(!b.finishDate) b.finishDate = localDateStr(new Date());
+    if(!b.startDate) b.startDate = b.finishDate;
+    if(!Array.isArray(b.completions)) b.completions = [];
+    const last = b.completions[b.completions.length-1];
+    if(!last || last.date !== b.finishDate){ b.completions.push({date:b.finishDate, rating:b.rating||0}); }
+  } else if(newStatus!=='lido' && wasLido && b.finishDate){
+    // saiu de "lido" — remove só a conclusão ligada a essa data específica
+    const idx = (b.completions||[]).findIndex(c=>c.date===b.finishDate);
+    if(idx!==-1) b.completions.splice(idx,1);
+  }
+  b.status = newStatus;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function updateDetailFinishDate(bookId, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.finishDate = value;
+  if(b.status==='lido' && value){
+    // livro já está "lido" — isso é uma correção da data da conclusão existente, não uma releitura
+    if(!Array.isArray(b.completions)) b.completions = [];
+    const last = b.completions[b.completions.length-1];
+    if(!last){ b.completions.push({date:value, rating:b.rating||0}); }
+    else if(last.date !== value){ last.date = value; last.rating = b.rating||0; }
+  }
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
 function updateDetailPlanField(bookId, field, value){
   const b = DB.books.find(x=>x.id===bookId);
   if(!b) return;
@@ -3111,7 +3173,7 @@ function removePriceCheck(bookId, entryId){
 }
 function checkAutoComplete(b, date){
   if(!b.startDate){ b.startDate = date; }
-  if(b.status==='quero-ler' || b.status==='pausado'){ b.status='lendo'; }
+  if(b.status==='quero-ler' || b.status==='quero-muito-ler' || b.status==='pausado'){ b.status='lendo'; }
   if(b.totalPages>0 && b.currentPage>=b.totalPages && b.status!=='lido'){
     b.status = 'lido';
     b.finishDate = date;
@@ -3408,7 +3470,7 @@ function saveBook(){
   }
 
   let priority = existing ? existing.priority : null;
-  if(status==='quero-ler' && !priority){
+  if((status==='quero-ler' || status==='quero-muito-ler') && !priority){
     priority = Math.max(0, ...DB.books.map(x=>x.priority||0)) + 1;
   }
 

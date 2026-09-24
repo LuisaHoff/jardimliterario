@@ -1175,6 +1175,36 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
     <div class="form-grid">
       <div class="form-col">
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">📊 Progresso de leitura</div>
+          <div class="field-row">
+            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value; refreshAllCheckpointHints();"></div>
+            <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
+          </div>
+          <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
+          <div class="field"><label>Status</label>
+            <select id="bStatus" onchange="toggleDateFields()">
+              <option value="quero-ler">Quero Ler</option>
+              <option value="quero-muito-ler">Quero Muito Ler</option>
+              <option value="lendo">Lendo</option>
+              <option value="lido">Lido</option>
+              <option value="pausado">Pausado</option>
+              <option value="abandonado">Abandonado</option>
+            </select>
+          </div>
+          <div class="field"><label>Avaliação</label>
+            <div class="star-rating" id="starRating">
+              <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
+            </div>
+          </div>
+          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
+          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
+          <div id="rereadRow" style="display:none;margin-top:14px;">
+            <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
+            <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
+          </div>
+        </div>
+
         <div class="form-section">
           <div class="form-section-title">📖 Informações principais</div>
           <div class="cover-upload">
@@ -1214,36 +1244,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
             <div class="field" style="margin-bottom:0;"><label>Formato</label>
               <select id="bFormat"><option>Físico</option><option>E-book</option><option>Audiobook</option></select>
             </div>
-          </div>
-        </div>
-
-        <div class="form-section form-section-featured">
-          <div class="form-section-title">📊 Progresso de leitura</div>
-          <div class="field-row">
-            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value; refreshAllCheckpointHints();"></div>
-            <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
-          </div>
-          <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
-          <div class="field"><label>Status</label>
-            <select id="bStatus" onchange="toggleDateFields()">
-              <option value="quero-ler">Quero Ler</option>
-              <option value="quero-muito-ler">Quero Muito Ler</option>
-              <option value="lendo">Lendo</option>
-              <option value="lido">Lido</option>
-              <option value="pausado">Pausado</option>
-              <option value="abandonado">Abandonado</option>
-            </select>
-          </div>
-          <div class="field"><label>Avaliação</label>
-            <div class="star-rating" id="starRating">
-              <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
-            </div>
-          </div>
-          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
-          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
-          <div id="rereadRow" style="display:none;margin-top:14px;">
-            <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
-            <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
           </div>
         </div>
 

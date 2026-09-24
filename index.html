@@ -2944,19 +2944,16 @@ function renderBookDetail(b){
       <div class="detail-right">
         <div class="form-section">
           <div class="form-section-title">📖 Informações principais</div>
-          <div class="cover-upload">
-            <img class="cover-preview" src="${getCoverSrc(b)||''}" style="${getCoverSrc(b)?'':'display:flex;align-items:center;justify-content:center;'}">
-            <div style="flex:1;min-width:0;padding-top:2px;">
-              <label class="file-upload-btn" for="detailCoverInput">📁 Escolher arquivo</label>
-              <input type="file" id="detailCoverInput" accept="image/*" onchange="updateDetailCoverFile('${b.id}', this.files[0])" style="display:none;">
-              <div style="margin:6px 0;display:flex;gap:8px;flex-wrap:wrap;">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverPaste('${b.id}')">📋 Colar imagem</button>
-                ${getCoverSrc(b)?`<button type="button" class="btn btn-ghost btn-sm" onclick="removeDetailCover('${b.id}')">✕ Remover capa</button>`:''}
-              </div>
-              <div class="cover-url-row">
-                <input type="text" id="detailCoverUrlInput" placeholder="cole o link da imagem...">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverUrl('${b.id}', document.getElementById('detailCoverUrlInput').value)">Usar link</button>
-              </div>
+          <div>
+            <label class="file-upload-btn" for="detailCoverInput">📁 Escolher arquivo</label>
+            <input type="file" id="detailCoverInput" accept="image/*" onchange="updateDetailCoverFile('${b.id}', this.files[0])" style="display:none;">
+            <div style="margin:6px 0;display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverPaste('${b.id}')">📋 Colar imagem</button>
+              ${getCoverSrc(b)?`<button type="button" class="btn btn-ghost btn-sm" onclick="removeDetailCover('${b.id}')">✕ Remover capa</button>`:''}
+            </div>
+            <div class="cover-url-row">
+              <input type="text" id="detailCoverUrlInput" placeholder="cole o link da imagem...">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverUrl('${b.id}', document.getElementById('detailCoverUrlInput').value)">Usar link</button>
             </div>
           </div>
           <div class="grid2" style="margin-top:16px;">

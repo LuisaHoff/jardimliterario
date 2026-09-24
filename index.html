@@ -771,7 +771,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="page active" id="page-inicio">
       <div class="page-header">
         <div><h1 id="greeting">Bem-vinda de volta 🌸</h1><p>Seu cantinho de leitura, sempre florido.</p></div>
-        <button class="btn btn-primary" onclick="openBookModal()">+ Novo livro</button>
+        <button class="btn btn-primary" onclick="createNewBookAndOpenDetail()">+ Novo livro</button>
       </div>
       <div class="vine-divider"></div>
 
@@ -825,7 +825,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="page" id="page-estante">
       <div class="page-header">
         <div><h1>Minha Estante</h1><p>Todos os livros, num só jardim.</p></div>
-        <button class="btn btn-primary" onclick="openBookModal()">+ Novo livro</button>
+        <button class="btn btn-primary" onclick="createNewBookAndOpenDetail()">+ Novo livro</button>
       </div>
       <div class="vine-divider"></div>
       <div class="toolbar">
@@ -863,7 +863,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-sage" onclick="suggestNextRead()">🎲 Sortear próxima leitura</button>
           <button class="btn btn-ghost" onclick="shareWishlist()">📥 Baixar lista</button>
-          <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-muito-ler';">+ Novo livro</button>
+          <button class="btn btn-primary" onclick="createNewBookAndOpenDetail('quero-muito-ler')">+ Novo livro</button>
         </div>
       </div>
       <div class="vine-divider"></div>
@@ -885,7 +885,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="page" id="page-wishlist">
       <div class="page-header">
         <div><h1>Lista de Desejos</h1><p>Livros que você quer comprar, com o valor de cada um.</p></div>
-        <button class="btn btn-primary" onclick="openBookModal(); document.getElementById('bStatus').value='quero-ler';">+ Novo item</button>
+        <button class="btn btn-primary" onclick="createNewBookAndOpenDetail('quero-ler')">+ Novo item</button>
       </div>
       <div class="vine-divider"></div>
       <div class="stat-grid" id="wishlistStatGrid" style="grid-template-columns:repeat(2,1fr);margin-bottom:24px;"></div>
@@ -1157,11 +1157,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 <!-- ===== MODAL: BOOK DETAIL (read-only) ===== -->
 <div class="overlay" id="bookDetailModalOverlay">
   <div class="modal" style="max-width:980px;">
-    <button class="modal-close" onclick="closeModal('bookDetailModalOverlay')">✕</button>
+    <button class="modal-close" onclick="closeBookDetailModal()">✕</button>
     <div id="bookDetailContent"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('bookDetailModalOverlay')">Fechar</button>
-      <button class="btn btn-primary" id="bookDetailEditBtn">✎ Editar</button>
+      <button class="btn btn-primary" onclick="closeBookDetailModal()">Fechar</button>
     </div>
   </div>
 </div>
@@ -1175,36 +1174,6 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
     <div class="form-grid">
       <div class="form-col">
-        <div class="form-section form-section-featured">
-          <div class="form-section-title">📊 Progresso de leitura</div>
-          <div class="field-row">
-            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value; refreshAllCheckpointHints();"></div>
-            <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
-          </div>
-          <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
-          <div class="field"><label>Status</label>
-            <select id="bStatus" onchange="toggleDateFields()">
-              <option value="quero-ler">Quero Ler</option>
-              <option value="quero-muito-ler">Quero Muito Ler</option>
-              <option value="lendo">Lendo</option>
-              <option value="lido">Lido</option>
-              <option value="pausado">Pausado</option>
-              <option value="abandonado">Abandonado</option>
-            </select>
-          </div>
-          <div class="field"><label>Avaliação</label>
-            <div class="star-rating" id="starRating">
-              <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
-            </div>
-          </div>
-          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
-          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
-          <div id="rereadRow" style="display:none;margin-top:14px;">
-            <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
-            <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
-          </div>
-        </div>
-
         <div class="form-section">
           <div class="form-section-title">📖 Informações principais</div>
           <div class="cover-upload">
@@ -1244,6 +1213,36 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
             <div class="field" style="margin-bottom:0;"><label>Formato</label>
               <select id="bFormat"><option>Físico</option><option>E-book</option><option>Audiobook</option></select>
             </div>
+          </div>
+        </div>
+
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">📊 Progresso de leitura</div>
+          <div class="field-row">
+            <div class="field"><label>Total de páginas</label><input type="number" id="bTotalPages" min="1" oninput="document.getElementById('bCurrentPage').max=this.value; refreshAllCheckpointHints();"></div>
+            <div class="field"><label>Página atual</label><input type="number" id="bCurrentPage" min="0"></div>
+          </div>
+          <div id="finishEstimateInfo" style="font-size:11px;color:var(--ink-soft);margin:-12px 0 20px;"></div>
+          <div class="field"><label>Status</label>
+            <select id="bStatus" onchange="toggleDateFields()">
+              <option value="quero-ler">Quero Ler</option>
+              <option value="quero-muito-ler">Quero Muito Ler</option>
+              <option value="lendo">Lendo</option>
+              <option value="lido">Lido</option>
+              <option value="pausado">Pausado</option>
+              <option value="abandonado">Abandonado</option>
+            </select>
+          </div>
+          <div class="field"><label>Avaliação</label>
+            <div class="star-rating" id="starRating">
+              <span data-v="1">⭐</span><span data-v="2">⭐</span><span data-v="3">⭐</span><span data-v="4">⭐</span><span data-v="5">⭐</span>
+            </div>
+          </div>
+          <div class="field"><label>Data de início</label><input type="date" id="bStartDate"></div>
+          <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" id="bFinishDate"></div>
+          <div id="rereadRow" style="display:none;margin-top:14px;">
+            <button class="btn btn-sage btn-sm" type="button" onclick="markReread()">🔁 Já li de novo? Marcar releitura</button>
+            <div id="readHistoryInfo" style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;"></div>
           </div>
         </div>
 
@@ -1977,7 +1976,6 @@ function renderPlansSection(){
         ${coverHtml(b,'cover')}
         <div><div class="dbl-title">${esc(b.title)}</div><div class="dbl-sub">${statusTag}${fmtDate(b.planStart)} – ${fmtDate(end)}</div></div>
       </div>
-      <button class="btn btn-ghost btn-sm" style="padding:6px 10px;flex-shrink:0;" title="Editar planejamento" onclick="event.stopPropagation(); openBookModal('${b.id}')">🗓️</button>
     </div>`;
   }).join('');
 }
@@ -1999,7 +1997,7 @@ function renderInicio(){
 
   const cr = document.getElementById('currentReads');
   if(reading.length===0){
-    cr.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;"><div class="big">🌱</div>Nenhum livro em andamento.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal()">Começar uma leitura</button></div>`;
+    cr.innerHTML = `<div class="card empty-state" style="grid-column:1/-1;"><div class="big">🌱</div>Nenhum livro em andamento.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="createNewBookAndOpenDetail()">Começar uma leitura</button></div>`;
   } else {
     cr.innerHTML = reading.map(b=>{
       const p = pct(b);
@@ -2233,7 +2231,7 @@ function renderEstante(){
   shelfView.style.display='none';
 
   if(list.length===0){
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🌷</div>Nenhum livro por aqui ainda.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal()">Adicionar o primeiro livro</button></div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🌷</div>Nenhum livro por aqui ainda.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="createNewBookAndOpenDetail()">Adicionar o primeiro livro</button></div>`;
     return;
   }
   grid.innerHTML = list.map(b=>`
@@ -2484,7 +2482,7 @@ function renderTbrTabContent(){
       ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🔎</div>Nenhum livro encontrado com "${esc(q)}".</div>`
       : (tbrViewMode==='mes'
         ? (selectedTbrTab==='none'
-          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="openBookModal(); document.getElementById('bStatus').value='quero-muito-ler';">Adicionar um livro</button></div>`
+          ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Nenhum livro sem mês por aqui — ou tudo já está organizado, ou sua TBR está vazia.<br><button class="btn btn-primary" style="margin-top:12px;" onclick="createNewBookAndOpenDetail('quero-muito-ler')">Adicionar um livro</button></div>`
           : `<div class="empty-state" style="grid-column:1/-1;"><div class="big">📅</div>Nenhum livro planejado pra esse mês ainda.</div>`)
         : (selectedGenreTab===null
           ? `<div class="empty-state" style="grid-column:1/-1;"><div class="big">🗂️</div>Todos os seus livros da TBR já têm um gênero definido. 🌷</div>`
@@ -2848,20 +2846,17 @@ function suggestColorsFromImage(source){
   }
 }
 /* ============ BOOK DETAIL (read-only view) ============ */
-function openBookDetail(id){
+function openBookDetail(id, isNew){
+  if(!isNew) pendingNewBookId = null;
   const b = DB.books.find(x=>x.id===id);
   if(!b) return;
   renderBookDetail(b);
-  document.getElementById('bookDetailEditBtn').onclick = ()=>{ closeModal('bookDetailModalOverlay'); openBookModal(b.id); };
   document.getElementById('bookDetailModalOverlay').classList.add('open');
 }
 function renderBookDetail(b){
   const p = pct(b);
   const est = b.status==='lendo' ? estimateFinishDate(b) : null;
   const hist = b.completions||[];
-
-  const badges = [`<span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}</span>`];
-  if(b.favorite) badges.push(`<span class="badge" style="background:var(--blush-deep);color:var(--rosewood);">❤️ Favorito</span>`);
 
   let progressHtml = '';
   if(b.totalPages){
@@ -2870,14 +2865,6 @@ function renderBookDetail(b){
       <div class="rc-pct">${p}% · pág. ${b.currentPage||0}/${b.totalPages}${est?` · 🔮 previsão ${est.toLocaleDateString('pt-BR')}`:''}</div>
     </div>`;
   }
-
-  const facts = [];
-  if(b.genre) facts.push(['Gênero', esc(b.genre)]);
-  if(b.language) facts.push(['Idioma', esc(b.language)]);
-  if(b.format) facts.push(['Formato', esc(b.format)]);
-  if(b.saga) facts.push(['Saga', esc(b.saga) + (b.sagaOrder?` · #${b.sagaOrder}`:'')]);
-  if(b.price) facts.push(['Preço', esc(b.price)]);
-  if(b.store) facts.push(['Onde comprar', esc(b.store)]);
 
   let alerts = '';
   if(b.lentTo) alerts += `<div class="detail-alert detail-alert-lent">📤 Emprestado para ${esc(b.lentTo)}${b.lentDate?' desde '+fmtDate(b.lentDate):''}</div>`;
@@ -2945,14 +2932,52 @@ function renderBookDetail(b){
     <div class="detail-grid">
       <div class="detail-left form-section">
         ${getCoverSrc(b) ? `<img class="detail-cover-lg" src="${getCoverSrc(b)}">` : `<div class="detail-cover-lg detail-cover-empty" style="${b.color?`background:${b.color};`:''}">📖</div>`}
-        <div class="detail-title" style="margin-top:16px;">${esc(b.title)}</div>
-        <div class="detail-author">${esc(b.author)}</div>
-        <div class="detail-badges">${badges.join('')}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;">
+          <div class="detail-title" style="flex:1;">${esc(b.title)||'Sem título'}</div>
+          <button type="button" onclick="toggleDetailFavorite('${b.id}')" title="Marcar como favorito" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;flex-shrink:0;">${b.favorite?'❤️':'🤍'}</button>
+        </div>
+        <div class="detail-author">${esc(b.author)||'Sem autora/autor'}</div>
+        <div class="detail-badges"><span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}</span></div>
         ${progressHtml}
         ${alerts}
-        ${facts.length?`<div class="detail-facts" style="margin-top:18px;grid-template-columns:1fr 1fr;">${facts.map(([l,v])=>`<div><div class="detail-fact-label">${l}</div><div class="detail-fact-value">${v}</div></div>`).join('')}</div>`:''}
       </div>
       <div class="detail-right">
+        <div class="form-section">
+          <div class="form-section-title">📖 Informações principais</div>
+          <div class="cover-upload">
+            <img class="cover-preview" src="${getCoverSrc(b)||''}" style="${getCoverSrc(b)?'':'display:flex;align-items:center;justify-content:center;'}">
+            <div style="flex:1;min-width:0;padding-top:2px;">
+              <label class="file-upload-btn" for="detailCoverInput">📁 Escolher arquivo</label>
+              <input type="file" id="detailCoverInput" accept="image/*" onchange="updateDetailCoverFile('${b.id}', this.files[0])" style="display:none;">
+              <div style="margin:6px 0;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverPaste('${b.id}')">📋 Colar imagem</button>
+                ${getCoverSrc(b)?`<button type="button" class="btn btn-ghost btn-sm" onclick="removeDetailCover('${b.id}')">✕ Remover capa</button>`:''}
+              </div>
+              <div class="cover-url-row">
+                <input type="text" id="detailCoverUrlInput" placeholder="cole o link da imagem...">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="updateDetailCoverUrl('${b.id}', document.getElementById('detailCoverUrlInput').value)">Usar link</button>
+              </div>
+            </div>
+          </div>
+          <div class="grid2" style="margin-top:16px;">
+            <div class="field"><label>Título</label><input type="text" value="${esc(b.title)}" onchange="updateDetailSimpleField('${b.id}','title',this.value)"></div>
+            <div class="field"><label>Autora/Autor</label><input type="text" value="${esc(b.author)}" onchange="updateDetailSimpleField('${b.id}','author',this.value)"></div>
+            <div class="field"><label>Saga/Série</label><input type="text" value="${esc(b.saga||'')}" placeholder="ex: Trono de Vidro" onchange="updateDetailSimpleField('${b.id}','saga',this.value)"></div>
+            <div class="field"><label>Nº na saga</label><input type="number" min="1" value="${b.sagaOrder||''}" onchange="updateDetailSimpleField('${b.id}','sagaOrder',this.value,true)"></div>
+            <div class="field"><label>Gênero</label><input type="text" value="${esc(b.genre||'')}" placeholder="ex: Fantasia" onchange="updateDetailSimpleField('${b.id}','genre',this.value)"></div>
+            <div class="field"><label>Idioma</label>
+              <select onchange="updateDetailSimpleField('${b.id}','language',this.value)">
+                <option value="" ${!b.language?'selected':''}>—</option>
+                ${['Português','Inglês','Espanhol','Francês','Outro'].map(l=>`<option ${b.language===l?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:0;"><label>Formato</label>
+              <select onchange="updateDetailSimpleField('${b.id}','format',this.value)">
+                ${['Físico','E-book','Audiobook'].map(f=>`<option ${b.format===f?'selected':''}>${f}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        </div>
         <div class="form-section form-section-featured">
           <div class="form-section-title">📊 Progresso de leitura</div>
           <div class="grid2" style="margin-bottom:16px;">
@@ -2971,6 +2996,8 @@ function renderBookDetail(b){
             <div class="field" style="margin-bottom:0;"><label>Data de início</label><input type="date" value="${b.startDate||''}" onchange="updateDetailPlanField('${b.id}','startDate',this.value)"></div>
             <div class="field" style="margin-bottom:0;"><label>Data de conclusão</label><input type="date" value="${b.finishDate||''}" onchange="updateDetailFinishDate('${b.id}',this.value)"></div>
           </div>
+          ${hist.length>1?`<div style="font-size:11.5px;color:var(--ink-soft);margin-top:14px;">Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}</div>`:''}
+          ${b.status==='lido'?`<button class="btn btn-sage btn-sm" type="button" style="margin-top:14px;" onclick="markDetailReread('${b.id}')">🔁 Já li de novo? Marcar releitura</button>`:''}
         </div>
         <div class="form-section form-section-featured">
           <div class="form-section-title">🗓️ Planejamento &amp; metas de progresso</div>
@@ -2978,21 +3005,44 @@ function renderBookDetail(b){
             <div class="field" style="margin-bottom:0;"><label>Início planejado</label><input type="date" value="${b.planStart||''}" onchange="updateDetailPlanField('${b.id}','planStart',this.value)"></div>
             <div class="field" style="margin-bottom:0;"><label>Fim planejado</label><input type="date" value="${b.planEnd||''}" onchange="updateDetailPlanField('${b.id}','planEnd',this.value)"></div>
           </div>
-          <div class="detail-section-label" style="margin-top:0;">🎯 Metas de progresso</div>
+          <div class="field-row" style="margin-bottom:0;">
+            <div class="field"><label>Mês que quero ler</label>
+              <select onchange="updateDetailSimpleField('${b.id}','planMonth',this.value,true)">
+                <option value="" ${(b.planMonth===null||b.planMonth===undefined)?'selected':''}>Nenhum</option>
+                ${MONTHS_PT.map((m,i)=>`<option value="${i}" ${b.planMonth===i?'selected':''}>${m}</option>`).join('')}
+              </select>
+            </div>
+            <div class="field"><label>Ano que quero ler</label><input type="number" placeholder="ex: 2026" value="${b.planYear||''}" onchange="updateDetailSimpleField('${b.id}','planYear',this.value,true)"></div>
+          </div>
+          <div class="detail-section-label" style="margin-top:14px;">🎯 Metas de progresso</div>
           <div style="margin:8px 0 12px;">${detailCheckpointsHtml(b)}</div>
           <div class="cp-actions">
             <button type="button" class="btn btn-sage btn-sm" onclick="addDetailCheckpoint('${b.id}')">🎯 Adicionar meta</button>
             <button type="button" class="btn btn-ghost btn-sm" onclick="suggestDetailCheckpoints('${b.id}')">🌱 Sugerir 25/50/75/100%</button>
           </div>
         </div>
-        ${(b.synopsis||b.thoughts||b.quote||(b.tags&&b.tags.length)||hist.length>1) ? `<div class="form-section">
+        <div class="form-section form-section-featured">
+          <div class="form-section-title">🎨 Cor &amp; organização</div>
+          <div class="field"><label>Cor no calendário</label>${detailColorPickerHtml(b)}</div>
+          <div style="margin-top:16px;">${detailGoalsChallengesHtml(b)}</div>
+        </div>
+        <div class="form-section">
           <div class="form-section-title">📝 Sobre o livro</div>
-          ${b.synopsis?`<div class="detail-section-label" style="margin-top:0;">Sinopse</div><div class="detail-text">${esc(b.synopsis)}</div>`:''}
-          ${b.thoughts?`<div class="detail-section-label">O que achei</div><div class="detail-text">${esc(b.thoughts)}</div>`:''}
-          ${b.quote?`<div class="detail-section-label">Frase favorita</div><div class="detail-quote">"${esc(b.quote)}"</div>`:''}
-          ${(b.tags&&b.tags.length)?`<div class="detail-section-label">Tags</div><div class="detail-tags">${b.tags.map(t=>`<span class="detail-tag">#${esc(t)}</span>`).join('')}</div>`:''}
-          ${hist.length>1?`<div class="detail-section-label">Releituras</div><div class="detail-text">Você já leu este livro ${hist.length}x: ${hist.map(h=>fmtDate(h.date)).join(', ')}</div>`:''}
-        </div>` : ''}
+          <div class="field"><label>Sinopse</label><textarea onchange="updateDetailSimpleField('${b.id}','synopsis',this.value)">${esc(b.synopsis||'')}</textarea></div>
+          <div class="field"><label>O que achei</label><textarea placeholder="Suas impressões, o que mais gostou..." onchange="updateDetailSimpleField('${b.id}','thoughts',this.value)">${esc(b.thoughts||'')}</textarea></div>
+          <div class="field"><label>Frase favorita</label><input type="text" value="${esc(b.quote||'')}" onchange="updateDetailSimpleField('${b.id}','quote',this.value)"></div>
+          <div class="field" style="margin-bottom:0;"><label>Tags (separadas por vírgula)</label><input type="text" value="${(b.tags||[]).join(', ')}" placeholder="ex: romance, slow burn, favorito" onchange="updateDetailTags('${b.id}',this.value)"></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">💰 Extras</div>
+          <div class="grid2">
+            <div class="field"><label>Preço estimado</label><input type="text" value="${esc(b.price||'')}" placeholder="ex: R$ 39,90" onchange="updateDetailSimpleField('${b.id}','price',this.value)"></div>
+            <div class="field"><label>Onde comprar</label><input type="text" value="${esc(b.store||'')}" placeholder="ex: Amazon, Livraria X" onchange="updateDetailSimpleField('${b.id}','store',this.value)"></div>
+            <div class="field"><label>Emprestado para</label><input type="text" value="${esc(b.lentTo||'')}" placeholder="Nome de quem pegou" onchange="updateDetailSimpleField('${b.id}','lentTo',this.value)"></div>
+            <div class="field" style="margin-bottom:0;"><label>Data do empréstimo</label><input type="date" value="${b.lentDate||''}" onchange="updateDetailSimpleField('${b.id}','lentDate',this.value)"></div>
+          </div>
+          ${b.lentTo?`<div style="margin-top:10px;"><button class="btn btn-ghost btn-sm" type="button" onclick="updateDetailSimpleField('${b.id}','lentTo',''); updateDetailSimpleField('${b.id}','lentDate','');">✔️ Marcar como devolvido</button></div>`:''}
+        </div>
         <div class="form-section form-section-featured">
           <div class="form-section-title">💰 Acompanhamento de preço</div>
           <div style="font-size:11px;color:var(--ink-soft);margin-bottom:12px;">Registre os preços que for vendo por aí pra acompanhar promoções. 🏷️</div>
@@ -3008,11 +3058,228 @@ function renderBookDetail(b){
           <div class="form-section-title">📅 Histórico de leitura</div>
           ${readingLogHtml}
         </div>
+        <div style="text-align:center;margin-top:6px;">
+          <button class="btn btn-danger btn-sm" type="button" onclick="deleteDetailBook('${b.id}')">🗑️ Excluir livro</button>
+        </div>
       </div>
     </div>
   `;
 }
 /* ---- edição direta na tela do livro (sem precisar abrir "Editar") ---- */
+function updateDetailSimpleField(bookId, field, value, isNumber){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b[field] = isNumber ? (value===''? null : Number(value)) : value;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function updateDetailTags(bookId, value){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.tags = value.split(',').map(t=>t.trim()).filter(Boolean);
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function toggleDetailFavorite(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.favorite = !b.favorite;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function setDetailColor(bookId, hex){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.color = hex;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function detailColorPickerHtml(b){
+  const noneBtn = `<div class="color-swatch none ${!b.color?'sel':''}" title="Sem cor" onclick="setDetailColor('${b.id}',null)"></div>`;
+  const swatches = BOOK_COLORS.map(c=>`<div class="color-swatch ${b.color===c?'sel':''}" style="background:${c}" title="${c}" onclick="setDetailColor('${b.id}','${c}')"></div>`).join('');
+  return `<div class="color-swatches">${noneBtn}${swatches}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+      <label style="margin:0;font-size:12px;white-space:nowrap;">Hex:</label>
+      <input type="text" maxlength="7" placeholder="#RRGGBB" value="${b.color||''}" style="max-width:110px;font-family:monospace;" onchange="
+        const v=this.value.trim();
+        if(v===''){ setDetailColor('${b.id}', null); }
+        else if(/^#([0-9A-Fa-f]{6})$/.test(v)){ setDetailColor('${b.id}', v.toUpperCase()); }
+        else { alert('Hex inválido — use o formato #RRGGBB'); this.value='${b.color||''}'; }
+      ">
+    </div>`;
+}
+function toggleDetailGoal(bookId, goalId){
+  const g = DB.goals.find(x=>x.id===goalId);
+  if(!g) return;
+  if(!Array.isArray(g.bookIds)) g.bookIds = [];
+  const idx = g.bookIds.indexOf(bookId);
+  if(idx===-1) g.bookIds.push(bookId); else g.bookIds.splice(idx,1);
+  save();
+  renderBookDetail(DB.books.find(x=>x.id===bookId));
+  renderAll();
+}
+function toggleDetailChallenge(bookId, challengeId){
+  const c = DB.challenges.find(x=>x.id===challengeId);
+  if(!c) return;
+  if(!Array.isArray(c.bookIds)) c.bookIds = [];
+  const idx = c.bookIds.indexOf(bookId);
+  if(idx===-1) c.bookIds.push(bookId); else c.bookIds.splice(idx,1);
+  save();
+  renderBookDetail(DB.books.find(x=>x.id===bookId));
+  renderAll();
+}
+function detailGoalsChallengesHtml(b){
+  const goalsHtml = DB.goals.length ? DB.goals.map(g=>{
+    const active = (g.bookIds||[]).includes(b.id);
+    return `<button type="button" class="chip-btn ${active?'chip-active':''}" onclick="toggleDetailGoal('${b.id}','${g.id}')">${g.icon||'⭐'} ${esc(g.title)}</button>`;
+  }).join('') : `<span class="chip-empty">Crie metas na aba "⭐ Metas" primeiro.</span>`;
+  const chalHtml = DB.challenges.length ? DB.challenges.map(c=>{
+    const active = (c.bookIds||[]).includes(b.id);
+    return `<button type="button" class="chip-btn ${active?'chip-active':''}" onclick="toggleDetailChallenge('${b.id}','${c.id}')">🎯 ${esc(c.title)}</button>`;
+  }).join('') : `<span class="chip-empty">Crie desafios na aba "🎯 Desafios" primeiro.</span>`;
+  return `<div class="field"><label>Metas que este livro ajuda a completar</label><div class="chip-picker">${goalsHtml}</div></div>
+    <div class="field" style="margin-bottom:0;"><label>Desafios que este livro faz parte</label><div class="chip-picker">${chalHtml}</div></div>`;
+}
+function updateDetailCoverFile(bookId, file){
+  if(!file || !file.type || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      const maxW = 420;
+      const scale = Math.min(1, maxW/img.width);
+      canvas.width = img.width*scale;
+      canvas.height = img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+      const b = DB.books.find(x=>x.id===bookId);
+      if(!b) return;
+      b.cover = 'idb';
+      setCoverInDb(bookId, dataUrl);
+      save();
+      renderBookDetail(b);
+      renderAll();
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function updateDetailCoverUrl(bookId, url){
+  url = (url||'').trim();
+  if(!url) return;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{
+    const b = DB.books.find(x=>x.id===bookId);
+    if(!b) return;
+    if(b.cover==='idb') deleteCoverFromDb(bookId);
+    b.cover = url;
+    save();
+    renderBookDetail(b);
+    renderAll();
+  };
+  img.onerror = ()=>{ alert('Não foi possível carregar essa imagem desse link.'); };
+  img.src = url;
+}
+async function updateDetailCoverPaste(bookId){
+  if(!navigator.clipboard || !navigator.clipboard.read){
+    alert('Seu navegador não suporta colar direto por aqui — tente usar Ctrl+V (ou Cmd+V) em cima da capa.');
+    return;
+  }
+  try{
+    const items = await navigator.clipboard.read();
+    for(const item of items){
+      const imageType = item.types.find(t=>t.startsWith('image/'));
+      if(imageType){
+        const blob = await item.getType(imageType);
+        updateDetailCoverFile(bookId, blob);
+        return;
+      }
+    }
+    alert('Não encontrei nenhuma imagem copiada. Copie uma imagem (botão direito → Copiar imagem) e tente de novo.');
+  }catch(err){
+    alert('Não consegui acessar a área de transferência. Copie a imagem de novo e tente Ctrl+V direto na tela.');
+  }
+}
+function removeDetailCover(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  if(b.cover==='idb') deleteCoverFromDb(bookId);
+  b.cover = null;
+  save();
+  renderBookDetail(b);
+  renderAll();
+}
+function markDetailReread(bookId){
+  const b = DB.books.find(x=>x.id===bookId);
+  if(!b) return;
+  b.status = 'lendo';
+  b.currentPage = 0;
+  b.startDate = localDateStr(new Date());
+  b.finishDate = '';
+  save();
+  renderBookDetail(b);
+  renderAll();
+  alert('Prontinho! Marquei como "Lendo" de novo e zerei a página atual pra essa releitura. 🌱');
+}
+function deleteDetailBook(bookId){
+  const idx = DB.books.findIndex(b=>b.id===bookId);
+  if(idx===-1) return;
+  const bookCopy = DB.books[idx];
+  if(!confirm(`Tem certeza que quer excluir "${bookCopy.title||'este livro'}"? Essa ação não pode ser desfeita (mas dá pra desfazer logo em seguida, se mudar de ideia).`)) return;
+  const removedCoverData = bookCopy.cover==='idb' ? coverCache[bookId] : null;
+  const removedLogs = DB.logs.filter(l=>l.bookId===bookId);
+  DB.books = DB.books.filter(b=>b.id!==bookId);
+  DB.logs = DB.logs.filter(l=>l.bookId!==bookId);
+  if(bookCopy.cover==='idb') deleteCoverFromDb(bookId);
+  save();
+  closeModal('bookDetailModalOverlay');
+  renderAll();
+  showUndoToast(`"${bookCopy.title}" excluído.`, ()=>{
+    DB.books.splice(idx,0,bookCopy);
+    DB.logs.push(...removedLogs);
+    if(removedCoverData) setCoverInDb(bookId, removedCoverData);
+    save();
+    renderAll();
+  });
+}
+/* cria um livro em branco e já abre a tela dele — substitui o antigo formulário "Novo livro" separado */
+function createNewBookAndOpenDetail(initialStatus){
+  const b = {
+    id: uid(), title:'', author:'', saga:'', sagaOrder:null, genre:'', language:'', format:'Físico',
+    totalPages:0, currentPage:0, status: initialStatus||'quero-ler', rating:0, startDate:'', finishDate:'',
+    completions:[], checkpoints:[], planStart:'', planEnd:'', planMonth:null, planYear:null,
+    color:null, cover:null, synopsis:'', thoughts:'', quote:'', tags:[], price:'', store:'',
+    lentTo:'', lentDate:'', priority:null, favorite:false, dateAdded:Date.now(), priceHistory:[]
+  };
+  if(b.status==='quero-ler' || b.status==='quero-muito-ler'){
+    b.priority = Math.max(0, ...DB.books.map(x=>x.priority||0)) + 1;
+  }
+  DB.books.push(b);
+  save();
+  renderAll();
+  pendingNewBookId = b.id;
+  openBookDetail(b.id, true);
+}
+/* se a pessoa fechar a tela de um livro recém-criado sem preencher nada, remove o rascunho vazio */
+let pendingNewBookId = null;
+function closeBookDetailModal(){
+  if(pendingNewBookId){
+    const b = DB.books.find(x=>x.id===pendingNewBookId);
+    if(b && !b.title.trim() && !b.author.trim()){
+      DB.books = DB.books.filter(x=>x.id!==pendingNewBookId);
+      save();
+      renderAll();
+    }
+    pendingNewBookId = null;
+  }
+  closeModal('bookDetailModalOverlay');
+}
 function updateDetailProgressField(bookId, field, value){
   const b = DB.books.find(x=>x.id===bookId);
   if(!b) return;
@@ -5240,13 +5507,14 @@ document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if(e.key==='Escape'){
+    if(document.getElementById('bookDetailModalOverlay').classList.contains('open')) closeBookDetailModal();
     document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
     return;
   }
   if(isTyping) return;
   if(e.key==='n' || e.key==='N'){
     e.preventDefault();
-    openBookModal();
+    createNewBookAndOpenDetail();
   } else if(e.key==='/'){
     e.preventDefault();
     const estantePage = document.getElementById('page-estante');

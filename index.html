@@ -273,11 +273,15 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .period-bar-title{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.25);}
 .period-bar-sub{font-size:9px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .period-bar-planned{background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 6px, transparent 6px 12px);}
-.checkpoint-row-card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:9px 10px;margin-bottom:10px;}
-.checkpoint-row{display:flex;align-items:center;gap:8px;}
+.checkpoint-row-card{background:#fff;border:1.5px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;transition:.15s;}
+.checkpoint-row-card.cp-state-met{border-left-color:var(--sage-deep);background:#F6FAF3;}
+.checkpoint-row-card.cp-state-missed{border-left-color:var(--rosewood);background:#FDF4F4;}
+.checkpoint-row{display:flex;align-items:center;gap:10px;}
 .checkpoint-row input[type="date"]{flex:1.3;min-width:0;}
-.checkpoint-row .cp-pct-wrap{flex:1;display:flex;align-items:center;gap:4px;}
-.checkpoint-row .cp-pct-wrap input{width:100%;}
+.checkpoint-row .cp-pct-wrap{flex:1;display:flex;align-items:center;gap:0;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding-right:12px;}
+.checkpoint-row .cp-pct-wrap input{width:100%;background:transparent;border:none;padding:10px 0 10px 13px;}
+.checkpoint-row .cp-pct-wrap input:focus{outline:none;}
+.checkpoint-row .cp-pct-wrap span{font-weight:700;color:var(--ink-soft);font-size:12px;}
 .checkpoint-row .cp-remove{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:none;border:none;color:var(--ink-soft);font-size:15px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;transition:.15s;}
 .checkpoint-row .cp-remove:hover{color:var(--rosewood);background:var(--blush-deep);}
 .cp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
@@ -285,9 +289,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .detail-star-rating span{cursor:pointer;opacity:.3;transition:.12s;}
 .detail-star-rating span:hover{transform:scale(1.15);}
 .detail-star-rating span.on{opacity:1;}
-.cp-hint{font-size:11px;color:var(--ink-soft);margin:6px 2px 0;min-height:14px;}
-.cp-hint .cp-badge-met{color:var(--sage-deep);font-weight:700;}
-.cp-hint .cp-badge-missed{color:var(--rosewood);font-weight:700;}
+.cp-hint{font-size:11px;color:var(--ink-soft);margin:8px 2px 0;min-height:20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.cp-hint .cp-badge-met, .cp-hint .cp-badge-missed{display:inline-flex;align-items:center;gap:3px;font-weight:700;padding:3px 10px;border-radius:20px;font-size:10.5px;}
+.cp-hint .cp-badge-met{background:#EAF3E4;color:var(--sage-deep);}
+.cp-hint .cp-badge-missed{background:#FBEAEA;color:var(--rosewood);}
 .period-day-num{position:relative;}
 .cp-badges{display:flex;gap:2px;flex-wrap:wrap;margin-top:2px;}
 .cp-badge{font-size:8.5px;font-weight:700;border-radius:5px;padding:1px 4px;color:#fff;white-space:nowrap;cursor:default;}
@@ -3014,15 +3019,17 @@ function detailCheckpointsHtml(b){
   const today = localDateStr(new Date());
   return cps.map(c=>{
     const parts = [];
+    let stateClass = '';
     if(b.totalPages && c.percent>0) parts.push(`≈ pág. ${Math.round(b.totalPages*c.percent/100)}`);
     if(b.totalPages && c.date && c.percent>0 && c.date<=today){
       const actualPct = Math.round((pagesReadUpTo(b.id, c.date)/b.totalPages)*100);
-      parts.push(actualPct>=c.percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
+      if(actualPct>=c.percent){ parts.push('<span class="cp-badge-met">✅ meta batida</span>'); stateClass=' cp-state-met'; }
+      else { parts.push('<span class="cp-badge-missed">🚩 meta não batida</span>'); stateClass=' cp-state-missed'; }
     }
-    return `<div class="checkpoint-row-card">
+    return `<div class="checkpoint-row-card${stateClass}">
       <div class="checkpoint-row">
         <input type="date" value="${c.date||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'date',this.value)">
-        <div class="cp-pct-wrap"><input type="number" min="1" max="100" placeholder="%" value="${c.percent||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'percent',this.value)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+        <div class="cp-pct-wrap"><input type="number" min="1" max="100" placeholder="%" value="${c.percent||''}" onchange="updateDetailCheckpoint('${b.id}',${c.i},'percent',this.value)"><span>%</span></div>
         <button type="button" class="cp-remove" onclick="removeDetailCheckpoint('${b.id}',${c.i})" title="Remover">✕</button>
       </div>
       <div class="cp-hint">${parts.join(' · ')}</div>
@@ -3146,7 +3153,7 @@ function addCheckpointRow(date, percent){
   row.innerHTML = `
     <div class="checkpoint-row">
       <input type="date" class="cp-date" value="${date||''}" onchange="updateCheckpointHint(this)">
-      <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}" oninput="updateCheckpointHint(this)"><span style="font-size:12px;color:var(--ink-soft);">%</span></div>
+      <div class="cp-pct-wrap"><input type="number" class="cp-pct" min="1" max="100" placeholder="%" value="${percent||''}" oninput="updateCheckpointHint(this)"><span>%</span></div>
       <button type="button" class="cp-remove" onclick="this.closest('.checkpoint-row-card').remove()" title="Remover">✕</button>
     </div>
     <div class="cp-hint"></div>
@@ -3166,9 +3173,11 @@ function updateCheckpointHint(el){
   const parts = [];
   if(totalPages>0 && percent>0) parts.push(`≈ pág. ${Math.round(totalPages*percent/100)}`);
   const today = localDateStr(new Date());
+  row.classList.remove('cp-state-met','cp-state-missed');
   if(bookId && totalPages>0 && date && percent>0 && date<=today){
     const actualPct = Math.round((pagesReadUpTo(bookId, date)/totalPages)*100);
-    parts.push(actualPct>=percent ? '<span class="cp-badge-met">✅ meta batida</span>' : '<span class="cp-badge-missed">⚑ meta não batida</span>');
+    if(actualPct>=percent){ parts.push('<span class="cp-badge-met">✅ meta batida</span>'); row.classList.add('cp-state-met'); }
+    else { parts.push('<span class="cp-badge-missed">🚩 meta não batida</span>'); row.classList.add('cp-state-missed'); }
   }
   row.querySelector('.cp-hint').innerHTML = parts.join(' · ');
 }

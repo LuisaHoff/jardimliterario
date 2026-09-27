@@ -208,6 +208,10 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .select-month{background:linear-gradient(180deg,#fff,var(--blush)) !important;border-color:var(--sage) !important;font-weight:700 !important;color:var(--moss) !important;}
 .select-month.filter-active{background:linear-gradient(90deg,var(--sage-deep),var(--sage)) !important;color:#fff !important;border-color:transparent !important;}
 .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px;}
+.crit-shelf{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))!important;gap:12px!important;}
+.crit-shelf .book-title{font-size:11.5px;}
+.crit-shelf .book-author{font-size:10px;}
+.crit-shelf .badge{font-size:9px;padding:2px 7px;}
 .book{cursor:pointer;text-align:center;}
 .book .cover{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;margin-bottom:8px;box-shadow:0 6px 14px rgba(0,0,0,.12);transition:.18s;object-fit:cover;}
 .book:hover .cover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(173,86,120,.22);}
@@ -1367,9 +1371,13 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <h2 id="critDetailTitle">Detalhe</h2>
     <div class="detail-facts" id="critDetailStats"></div>
     <div class="toolbar" style="margin-bottom:12px;">
-      <input type="text" id="critDetailSearch" placeholder="🔎 Buscar nesta lista..." oninput="filterCritDetailList()">
+      <input type="text" id="critDetailSearch" placeholder="🔎 Buscar nesta lista..." oninput="filterCritDetailList()" style="flex:1;">
+      <select id="critDetailSort" onchange="sortCritDetailList()" style="max-width:190px;">
+        <option value="title">Ordenar: Título (A-Z)</option>
+        <option value="dateRead">Ordenar: Data lida (recente)</option>
+      </select>
     </div>
-    <div class="shelf" id="critDetailBookList"></div>
+    <div class="shelf crit-shelf" id="critDetailBookList"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('critDetailModalOverlay')">Fechar</button>
       <button class="btn btn-primary" id="critDetailEditBtn">✎ Editar critérios</button>
@@ -5252,8 +5260,11 @@ function openCritDetail(id, kind){
   const item = kind==='goal' ? DB.goals.find(x=>x.id===id) : DB.challenges.find(x=>x.id===id);
   if(!item) return;
   currentCritDetail = {id, kind};
-  const books = getCriteriaBooks(item).sort((a,b)=>a.title.localeCompare(b.title));
+  document.getElementById('critDetailSort').value = 'title';
+  critDetailSortBy = 'title';
+  const books = getCriteriaBooks(item);
   critDetailBooksCache = books;
+  sortCritDetailBooksCache();
   document.getElementById('critDetailTitle').textContent = (item.icon?item.icon+' ':(kind==='challenge'?'🎯 ':'')) + item.title;
   document.getElementById('critDetailSearch').value = '';
   renderCritStats(item, books);
@@ -5279,15 +5290,45 @@ function renderCritStats(item, books){
 }
 function renderCritDetailList(books){
   const el = document.getElementById('critDetailBookList');
-  el.innerHTML = books.length ? books.map(b=>`
+  el.innerHTML = books.length ? books.map(b=>{
+    const readDate = getLatestCompletionDateStr(b);
+    return `
     <div class="book" onclick="openBookFromCritDetail('${b.id}')">
       <div class="cover-wrap">${coverHtml(b,'cover')}${b.favorite?'<span class="fav-badge">❤️</span>':''}${b.color?`<span class="color-dot" style="background:${b.color}"></span>`:''}</div>
       <div class="book-title">${esc(b.title)}</div>
       <div class="book-author">${esc(b.author)}</div>
       ${b.rating?`<div class="book-rating">${starsHtml(b.rating)}</div>`:''}
       <span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}${b.status==='lendo' && b.totalPages?' · '+pct(b)+'%':''}</span>
-    </div>
-  `).join('') : `<div class="empty-state" style="grid-column:1/-1;padding:16px;">Nenhum livro aqui ainda. Vincule pelo cadastro do livro.</div>`;
+      ${readDate?`<div style="font-size:9.5px;color:var(--ink-soft);margin-top:3px;">📖 ${fmtDate(readDate)}</div>`:''}
+    </div>`;
+  }).join('') : `<div class="empty-state" style="grid-column:1/-1;padding:16px;">Nenhum livro aqui ainda. Vincule pelo cadastro do livro.</div>`;
+}
+let critDetailSortBy = 'title';
+function getLatestCompletionDateStr(b){
+  const dates = (b.completions||[]).map(c=>c.date).filter(Boolean).sort();
+  return dates.length ? dates[dates.length-1] : null;
+}
+function getLatestCompletionDate(b){
+  const str = getLatestCompletionDateStr(b);
+  return str ? new Date(str+'T00:00:00') : null;
+}
+function sortCritDetailBooksCache(){
+  if(critDetailSortBy==='dateRead'){
+    critDetailBooksCache.sort((a,b)=>{
+      const da = getLatestCompletionDate(a), db = getLatestCompletionDate(b);
+      if(da && db) return db-da;
+      if(da && !db) return -1;
+      if(!da && db) return 1;
+      return a.title.localeCompare(b.title);
+    });
+  } else {
+    critDetailBooksCache.sort((a,b)=>a.title.localeCompare(b.title));
+  }
+}
+function sortCritDetailList(){
+  critDetailSortBy = document.getElementById('critDetailSort').value;
+  sortCritDetailBooksCache();
+  filterCritDetailList();
 }
 function openBookFromCritDetail(bookId){
   critDetailReturnContext = currentCritDetail;

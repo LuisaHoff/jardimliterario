@@ -1369,7 +1369,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
     <div class="toolbar" style="margin-bottom:12px;">
       <input type="text" id="critDetailSearch" placeholder="🔎 Buscar nesta lista..." oninput="filterCritDetailList()">
     </div>
-    <div class="detail-book-list dbl-grid" id="critDetailBookList"></div>
+    <div class="shelf" id="critDetailBookList"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('critDetailModalOverlay')">Fechar</button>
       <button class="btn btn-primary" id="critDetailEditBtn">✎ Editar critérios</button>
@@ -3340,6 +3340,12 @@ function closeBookDetailModal(){
     pendingNewBookId = null;
   }
   closeModal('bookDetailModalOverlay');
+  // se o livro foi aberto a partir de uma meta/desafio, volta pra lá em vez de fechar tudo
+  if(critDetailReturnContext){
+    const ctx = critDetailReturnContext;
+    critDetailReturnContext = null;
+    openCritDetail(ctx.id, ctx.kind);
+  }
 }
 function updateDetailProgressField(bookId, field, value){
   const b = DB.books.find(x=>x.id===bookId);
@@ -5238,11 +5244,14 @@ function getCriteriaBooks(c){
     return true;
   });
 }
+let currentCritDetail = null;
+let critDetailReturnContext = null;
 function openGoalDetail(id){ openCritDetail(id, 'goal'); }
 function openChallengeDetail(id){ openCritDetail(id, 'challenge'); }
 function openCritDetail(id, kind){
   const item = kind==='goal' ? DB.goals.find(x=>x.id===id) : DB.challenges.find(x=>x.id===id);
   if(!item) return;
+  currentCritDetail = {id, kind};
   const books = getCriteriaBooks(item).sort((a,b)=>a.title.localeCompare(b.title));
   critDetailBooksCache = books;
   document.getElementById('critDetailTitle').textContent = (item.icon?item.icon+' ':(kind==='challenge'?'🎯 ':'')) + item.title;
@@ -5271,14 +5280,19 @@ function renderCritStats(item, books){
 function renderCritDetailList(books){
   const el = document.getElementById('critDetailBookList');
   el.innerHTML = books.length ? books.map(b=>`
-    <div class="dbl-item" onclick="closeModal('critDetailModalOverlay'); openBookDetail('${b.id}')">
-      ${coverHtml(b,'cover')}
-      <div style="flex:1;min-width:0;">
-        <div class="dbl-title">${esc(b.title)}</div>
-        <div class="dbl-sub">${STATUS_LABEL[b.status]} ${b.rating?'· '+starsHtml(b.rating):''}${b.totalPages?' · '+pct(b)+'%':''}</div>
-      </div>
+    <div class="book" onclick="openBookFromCritDetail('${b.id}')">
+      <div class="cover-wrap">${coverHtml(b,'cover')}${b.favorite?'<span class="fav-badge">❤️</span>':''}${b.color?`<span class="color-dot" style="background:${b.color}"></span>`:''}</div>
+      <div class="book-title">${esc(b.title)}</div>
+      <div class="book-author">${esc(b.author)}</div>
+      ${b.rating?`<div class="book-rating">${starsHtml(b.rating)}</div>`:''}
+      <span class="badge badge-${b.status}">${STATUS_LABEL[b.status]}${b.status==='lendo' && b.totalPages?' · '+pct(b)+'%':''}</span>
     </div>
-  `).join('') : `<div class="empty-state" style="padding:16px;">Nenhum livro aqui ainda. Vincule pelo cadastro do livro.</div>`;
+  `).join('') : `<div class="empty-state" style="grid-column:1/-1;padding:16px;">Nenhum livro aqui ainda. Vincule pelo cadastro do livro.</div>`;
+}
+function openBookFromCritDetail(bookId){
+  critDetailReturnContext = currentCritDetail;
+  closeModal('critDetailModalOverlay');
+  openBookDetail(bookId);
 }
 function filterCritDetailList(){
   const q = (document.getElementById('critDetailSearch').value||'').toLowerCase().trim();
@@ -5580,7 +5594,12 @@ document.addEventListener('keydown', function(e){
   const tag = (e.target.tagName||'').toLowerCase();
   const isTyping = tag==='input' || tag==='textarea' || tag==='select' || e.target.isContentEditable;
   if(e.key==='Escape'){
-    if(document.getElementById('bookDetailModalOverlay').classList.contains('open')) closeBookDetailModal();
+    if(document.getElementById('bookDetailModalOverlay').classList.contains('open')){
+      closeBookDetailModal();
+      // se voltou pra uma meta/desafio (closeBookDetailModal reabriu o overlay dela), não fecha
+      // tudo em seguida — só sai daqui.
+      return;
+    }
     document.querySelectorAll('.overlay.open').forEach(ov=> ov.classList.remove('open'));
     return;
   }

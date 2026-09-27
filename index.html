@@ -4172,7 +4172,10 @@ function getReadingPeriodsForMonth(year, month){
       if(start>end) start = end;
     } else if(b.status==='lendo' && b.startDate){
       start = new Date(b.startDate+'T00:00:00');
-      end = new Date();
+      // se tiver uma data de "fim planejado", a barra vai até lá (mesmo que já tenha passado —
+      // isso deixa visível quando a leitura está atrasada em relação ao planejado). Sem data
+      // planejada, continua indo até hoje, como antes.
+      end = b.planEnd ? new Date(b.planEnd+'T00:00:00') : new Date();
     }
     if(start && end && start<=monthEnd && end>=monthStart){
       periods.push({ bookId:b.id, title:b.title, start, end, color:b.color, status:STATUS_LABEL[b.status]||'', kind:'read' });

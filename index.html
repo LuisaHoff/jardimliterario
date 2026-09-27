@@ -208,10 +208,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 .select-month{background:linear-gradient(180deg,#fff,var(--blush)) !important;border-color:var(--sage) !important;font-weight:700 !important;color:var(--moss) !important;}
 .select-month.filter-active{background:linear-gradient(90deg,var(--sage-deep),var(--sage)) !important;color:#fff !important;border-color:transparent !important;}
 .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px;}
-.crit-shelf{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))!important;gap:12px!important;}
-.crit-shelf .book-title{font-size:11.5px;}
-.crit-shelf .book-author{font-size:10px;}
-.crit-shelf .badge{font-size:9px;padding:2px 7px;}
+.crit-shelf{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))!important;gap:18px!important;}
 .book{cursor:pointer;text-align:center;}
 .book .cover{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;margin-bottom:8px;box-shadow:0 6px 14px rgba(0,0,0,.12);transition:.18s;object-fit:cover;}
 .book:hover .cover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(173,86,120,.22);}
@@ -1366,7 +1363,7 @@ h1,h2,h3,h4,.display{font-family:'Fraunces',serif;}
 
 <!-- ===== MODAL: DETALHE DE META/DESAFIO ===== -->
 <div class="overlay" id="critDetailModalOverlay">
-  <div class="modal" style="max-width:900px;">
+  <div class="modal" style="max-width:1500px;">
     <button class="modal-close" onclick="closeModal('critDetailModalOverlay')">✕</button>
     <h2 id="critDetailTitle">Detalhe</h2>
     <div class="detail-facts" id="critDetailStats"></div>

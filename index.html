@@ -3058,6 +3058,7 @@ function renderBookDetail(b){
       </div>
     </div>
   `;
+  renderDetailCoverColorSuggestions(b);
 }
 /* ---- edição direta na tela do livro (sem precisar abrir "Editar") ---- */
 function updateDetailSimpleField(bookId, field, value, isNumber){
@@ -3095,7 +3096,8 @@ function setDetailColor(bookId, hex){
 function detailColorPickerHtml(b){
   const noneBtn = `<div class="color-swatch none ${!b.color?'sel':''}" title="Sem cor" onclick="setDetailColor('${b.id}',null)"></div>`;
   const swatches = BOOK_COLORS.map(c=>`<div class="color-swatch ${b.color===c?'sel':''}" style="background:${c}" title="${c}" onclick="setDetailColor('${b.id}','${c}')"></div>`).join('');
-  return `<div class="color-swatches">${noneBtn}${swatches}</div>
+  return `<div id="coverColorSuggestions-${b.id}" style="display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;"></div>
+    <div class="color-swatches">${noneBtn}${swatches}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
       <label style="margin:0;font-size:12px;white-space:nowrap;">Hex:</label>
       <input type="text" maxlength="7" placeholder="#RRGGBB" value="${b.color||''}" style="max-width:110px;font-family:monospace;" onchange="
@@ -3105,6 +3107,71 @@ function detailColorPickerHtml(b){
         else { alert('Hex inválido — use o formato #RRGGBB'); this.value='${b.color||''}'; }
       ">
     </div>`;
+}
+function rgbToHex(r,g,b){
+  return '#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+function extractPaletteFromImage(img){
+  try{
+    const size = 50;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    const buckets = {};
+    for(let i=0;i<data.length;i+=4){
+      const a = data[i+3];
+      if(a<128) continue;
+      const r = data[i], g = data[i+1], bl = data[i+2];
+      const qr = Math.round(r/24)*24, qg = Math.round(g/24)*24, qb = Math.round(bl/24)*24;
+      const key = qr+','+qg+','+qb;
+      if(!buckets[key]) buckets[key] = {r:0,g:0,b:0,count:0};
+      buckets[key].r+=r; buckets[key].g+=g; buckets[key].b+=bl; buckets[key].count++;
+    }
+    let arr = Object.values(buckets).map(o=>({r:Math.round(o.r/o.count),g:Math.round(o.g/o.count),b:Math.round(o.b/o.count),count:o.count}));
+    arr.sort((a,c2)=>c2.count-a.count);
+    const isNearWhite = c2=> c2.r>238 && c2.g>238 && c2.b>238;
+    const isNearBlack = c2=> c2.r<18 && c2.g<18 && c2.b<18;
+    const vivid = arr.filter(c2=>!isNearWhite(c2) && !isNearBlack(c2));
+    const pool = vivid.length>=5 ? vivid : arr;
+    const result = [];
+    for(const c2 of pool){
+      if(result.length>=5) break;
+      const tooClose = result.some(r=>Math.abs(r.r-c2.r)+Math.abs(r.g-c2.g)+Math.abs(r.b-c2.b) < 70);
+      if(!tooClose) result.push(c2);
+    }
+    if(result.length<5){
+      for(const c2 of arr){
+        if(result.length>=5) break;
+        if(!result.includes(c2)) result.push(c2);
+      }
+    }
+    return result.slice(0,5).map(c2=>rgbToHex(c2.r,c2.g,c2.b));
+  }catch(err){
+    // capa vinda de um link/domínio que bloqueia leitura de pixels (CORS) — sem sugestão possível
+    return [];
+  }
+}
+function renderDetailCoverColorSuggestions(b){
+  const el = document.getElementById(`coverColorSuggestions-${b.id}`);
+  if(!el) return;
+  const src = getCoverSrc(b);
+  if(!src){ el.style.display='none'; el.innerHTML=''; return; }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = ()=>{
+    // o detalhe pode ter sido fechado/re-renderizado enquanto a imagem carregava
+    const stillThere = document.getElementById(`coverColorSuggestions-${b.id}`);
+    if(!stillThere) return;
+    const colors = extractPaletteFromImage(img);
+    if(!colors.length){ stillThere.style.display='none'; stillThere.innerHTML=''; return; }
+    stillThere.style.display = 'flex';
+    stillThere.innerHTML = '<span style="font-size:11.5px;color:var(--ink-soft);">✨ Cores da capa:</span>' +
+      colors.map(c=>`<div class="color-swatch ${b.color===c?'sel':''}" style="width:26px;height:26px;background:${c};" title="${c}" onclick="setDetailColor('${b.id}','${c}')"></div>`).join('');
+  };
+  img.onerror = ()=>{ el.style.display='none'; el.innerHTML=''; };
+  img.src = src;
 }
 function toggleDetailGoal(bookId, goalId){
   const g = DB.goals.find(x=>x.id===goalId);
@@ -5043,6 +5110,15 @@ function matchesCriteria(comp, book, c){
 function challengeProgress(c){
   let count = 0;
   DB.books.forEach(b=>{
+    if(c.bookIds && c.bookIds.includes(b.id)){
+      // livro vinculado diretamente à meta/desafio: conta pelo status atual do livro, não pelo
+      // histórico de conclusões — que pode estar vazio em livros marcados "lido" antes desse
+      // histórico existir, fazendo a barrinha de progresso ficar presa em 0 mesmo já tendo lido.
+      if(b.status==='lido') count++;
+      return;
+    }
+    const hasAnyCriteria = c.year || c.genre || c.tag || c.author || c.language;
+    if(!hasAnyCriteria) return;
     (b.completions||[]).forEach(comp=>{
       if(matchesCriteria(comp, b, c)) count++;
     });
@@ -5130,7 +5206,7 @@ function renderGoalsPage(){
     const done = challengeProgress(g);
     const pct = Math.min(100, Math.round((done/g.target)*100));
     const remaining = Math.max(0, g.target-done);
-    const doneBooks = DB.books.filter(b=> (b.completions||[]).some(c=> matchesCriteria(c,b,g))).slice(0,5);
+    const doneBooks = DB.books.filter(b=> (g.bookIds && g.bookIds.includes(b.id)) ? b.status==='lido' : (b.completions||[]).some(c=> matchesCriteria(c,b,g))).slice(0,5);
     const coversHtml = doneBooks.map(b=> getCoverSrc(b) ? `<img class="goal-mini-cover" src="${getCoverSrc(b)}">` : `<div class="goal-mini-cover" style="display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--rosewood);">📖</div>`).join('');
     return `<div class="card goal-card" style="cursor:pointer;" onclick="openGoalDetail('${g.id}')">
       <div class="goal-card-head">

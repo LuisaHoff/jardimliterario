@@ -1806,22 +1806,19 @@ function goToPage(page){
 
 /* ============ RENDER ALL ============ */
 function renderAll(){
-  renderInicio();
-  renderEstante();
-  renderTbrPage();
-  renderWishlistPage();
-  renderAutoras();
-  renderSagas();
-  renderTags();
-  renderShelves();
-  renderGoalsPage();
-  renderFavoritos();
-  renderEstatisticas();
-  renderSidebarGoal();
-  renderCitacoes();
-  renderDiarioPage();
-  renderJardim();
-  renderStorageInfo();
+  // cada seção roda isolada: se uma travar com um erro (por causa de algum dado específico
+  // de um livro, por exemplo), as seções seguintes — como o calendário do Diário — continuam
+  // sendo atualizadas normalmente, em vez de pararem tudo no meio silenciosamente.
+  const steps = [
+    renderInicio, renderEstante, renderTbrPage, renderWishlistPage, renderAutoras,
+    renderSagas, renderTags, renderShelves, renderGoalsPage, renderFavoritos,
+    renderEstatisticas, renderSidebarGoal, renderCitacoes, renderDiarioPage,
+    renderJardim, renderStorageInfo
+  ];
+  steps.forEach(fn=>{
+    try{ fn(); }
+    catch(err){ console.error(`Jardim Literário: erro ao renderizar "${fn.name}" —`, err); }
+  });
 }
 
 /* ============ HELPERS ============ */
@@ -5521,6 +5518,22 @@ document.addEventListener('keydown', function(e){
     } else if(diarioPage && diarioPage.classList.contains('active')){
       const box = document.getElementById('diarySearchBox'); if(box) box.focus();
     }
+  }
+});
+
+/* ============ SINCRONIZAÇÃO ENTRE ABAS ============ */
+// se o Jardim Literário estiver aberto em mais de uma aba/janela ao mesmo tempo, uma edição
+// feita em uma aba (ex: no cadastro do livro) só chegava na outra depois de recarregar a página
+// — o calendário do Diário ficava "parado" na versão antiga. Este listener detecta a mudança no
+// localStorage feita pela outra aba e recarrega os dados na hora, sem precisar dar F5.
+window.addEventListener('storage', function(e){
+  if(e.key !== STORE_KEY || !e.newValue) return;
+  try{
+    DB = JSON.parse(e.newValue);
+    migrateData();
+    renderAll();
+  }catch(err){
+    console.error('Não consegui sincronizar as alterações feitas em outra aba:', err);
   }
 });
 

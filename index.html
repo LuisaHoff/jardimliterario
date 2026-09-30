@@ -5238,10 +5238,15 @@ function renderGoalsPage(){
 /* ============ DETALHE COMPARTILHADO (metas/desafios) ============ */
 let critDetailBooksCache = [];
 function getCriteriaBooks(c){
-  const hasAnyCriteria = c.genre || c.tag || c.author || c.language;
+  // tinha esquecido o critério "ano" aqui — por isso metas/desafios de ano (ex: "50 livros em
+  // 2026") apareciam certinho no card da listagem (que usa challengeProgress, e esse sim já
+  // considerava o ano), mas dentro do próprio detalhe vinham vazios ou com a contagem errada,
+  // porque esta função filtrava os livros sem olhar pra esse critério.
+  const hasAnyCriteria = c.year || c.genre || c.tag || c.author || c.language;
   return DB.books.filter(b=>{
     if(c.bookIds && c.bookIds.includes(b.id)) return true;
     if(!hasAnyCriteria) return false;
+    if(c.year && !(b.completions||[]).some(comp=> comp.date && new Date(comp.date+'T00:00:00').getFullYear()===c.year)) return false;
     if(c.genre && (b.genre||'').toLowerCase()!==c.genre.toLowerCase()) return false;
     if(c.tag && !(b.tags||[]).some(t=>t.toLowerCase()===c.tag.toLowerCase())) return false;
     if(c.author && !b.author.toLowerCase().includes(c.author.toLowerCase())) return false;
@@ -5273,7 +5278,9 @@ function openCritDetail(id, kind){
   document.getElementById('critDetailModalOverlay').classList.add('open');
 }
 function renderCritStats(item, books){
-  const done = books.filter(b=>b.status==='lido').length;
+  // usa a mesma conta do card da listagem (challengeProgress/matchesCriteria), pra não ter
+  // divergência entre "quantos aparecem aqui no detalhe" e "quantos o card lá fora mostra".
+  const done = challengeProgress(item);
   const target = item.target || books.length || 1;
   const pct = Math.min(100, Math.round((done/target)*100));
   const remaining = Math.max(0, target-done);
